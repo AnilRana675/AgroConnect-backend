@@ -1,0 +1,7 @@
+#!/bin/sh
+# Basic commit message validation
+if ! head -1 "$1" | grep -qE "^(feat|fix|docs|style|refactor|test|chore)(\(.+?\))?: .{1,}$"; then
+    echo "Bad commit message, see example: feat(login): add user authentication"
+    echo "Valid types: feat, fix, docs, style, refactor, test, chore"
+    exit 1
+fi
