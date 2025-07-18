@@ -51,16 +51,42 @@ describe('User Routes', () => {
     it('should return all users', async () => {
       // Create test users
       const user1 = new User({
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        role: 'farmer',
+        personalInfo: {
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+        locationInfo: {
+          state: 'California',
+          district: 'Los Angeles',
+          municipality: 'LA City',
+        },
+        farmInfo: {
+          farmerType: 'Organic',
+          farmingScale: 'Small',
+        },
+        loginCredentials: {
+          email: 'john@example.com',
+          password: 'password123',
+        },
       });
       const user2 = new User({
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        password: 'password123',
-        role: 'buyer',
+        personalInfo: {
+          firstName: 'Jane',
+          lastName: 'Smith',
+        },
+        locationInfo: {
+          state: 'Texas',
+          district: 'Houston',
+          municipality: 'Houston City',
+        },
+        farmInfo: {
+          farmerType: 'Conventional',
+          farmingScale: 'Medium',
+        },
+        loginCredentials: {
+          email: 'jane@example.com',
+          password: 'password123',
+        },
       });
 
       await user1.save();
@@ -69,40 +95,68 @@ describe('User Routes', () => {
       const response = await request(app).get('/api/users').expect(200);
 
       expect(response.body).toHaveLength(2);
-      expect(response.body[0].name).toBe('John Doe');
-      expect(response.body[1].name).toBe('Jane Smith');
+      expect(response.body[0].personalInfo.firstName).toBe('John');
+      expect(response.body[1].personalInfo.firstName).toBe('Jane');
       // Password should not be returned
-      expect(response.body[0].password).toBeUndefined();
+      expect(response.body[0].loginCredentials.password).toBeUndefined();
     });
   });
 
   describe('POST /api/users', () => {
     it('should create a new user', async () => {
       const userData = {
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password123',
-        role: 'farmer',
+        personalInfo: {
+          firstName: 'Test',
+          lastName: 'User',
+        },
+        locationInfo: {
+          state: 'California',
+          district: 'Los Angeles',
+          municipality: 'LA City',
+        },
+        farmInfo: {
+          farmerType: 'Organic',
+          farmingScale: 'Small',
+        },
+        loginCredentials: {
+          email: 'test@example.com',
+          password: 'password123',
+        },
       };
 
       const response = await request(app).post('/api/users').send(userData).expect(201);
 
-      expect(response.body.name).toBe(userData.name);
-      expect(response.body.email).toBe(userData.email);
-      expect(response.body.role).toBe(userData.role);
-      expect(response.body.password).toBeUndefined();
+      expect(response.body.personalInfo.firstName).toBe(userData.personalInfo.firstName);
+      expect(response.body.loginCredentials.email).toBe(userData.loginCredentials.email);
+      expect(response.body.farmInfo.farmerType).toBe(userData.farmInfo.farmerType);
+      expect(response.body.loginCredentials.password).toBeUndefined();
 
       // Verify user was saved to database
-      const savedUser = await User.findOne({ email: userData.email });
+      const savedUser = await User.findOne({
+        'loginCredentials.email': userData.loginCredentials.email,
+      });
       expect(savedUser).toBeTruthy();
     });
 
     it('should return 400 if user already exists', async () => {
       const userData = {
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password123',
-        role: 'farmer',
+        personalInfo: {
+          firstName: 'Test',
+          lastName: 'User',
+        },
+        locationInfo: {
+          state: 'California',
+          district: 'Los Angeles',
+          municipality: 'LA City',
+        },
+        farmInfo: {
+          farmerType: 'Organic',
+          farmingScale: 'Small',
+        },
+        loginCredentials: {
+          email: 'test@example.com',
+          password: 'password123',
+        },
       };
 
       // Create user first
@@ -118,18 +172,31 @@ describe('User Routes', () => {
   describe('GET /api/users/:id', () => {
     it('should return user by id', async () => {
       const user = new User({
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password123',
-        role: 'farmer',
+        personalInfo: {
+          firstName: 'Test',
+          lastName: 'User',
+        },
+        locationInfo: {
+          state: 'California',
+          district: 'Los Angeles',
+          municipality: 'LA City',
+        },
+        farmInfo: {
+          farmerType: 'Organic',
+          farmingScale: 'Small',
+        },
+        loginCredentials: {
+          email: 'test@example.com',
+          password: 'password123',
+        },
       });
       await user.save();
 
       const response = await request(app).get(`/api/users/${user._id}`).expect(200);
 
-      expect(response.body.name).toBe(user.name);
-      expect(response.body.email).toBe(user.email);
-      expect(response.body.password).toBeUndefined();
+      expect(response.body.personalInfo.firstName).toBe(user.personalInfo.firstName);
+      expect(response.body.loginCredentials.email).toBe(user.loginCredentials.email);
+      expect(response.body.loginCredentials.password).toBeUndefined();
     });
 
     it('should return 404 if user not found', async () => {
@@ -144,17 +211,44 @@ describe('User Routes', () => {
   describe('PUT /api/users/:id', () => {
     it('should update user', async () => {
       const user = new User({
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password123',
-        role: 'farmer',
+        personalInfo: {
+          firstName: 'Test',
+          lastName: 'User',
+        },
+        locationInfo: {
+          state: 'California',
+          district: 'Los Angeles',
+          municipality: 'LA City',
+        },
+        farmInfo: {
+          farmerType: 'Organic',
+          farmingScale: 'Small',
+        },
+        loginCredentials: {
+          email: 'test@example.com',
+          password: 'password123',
+        },
       });
       await user.save();
 
       const updateData = {
-        name: 'Updated User',
-        email: 'updated@example.com',
-        role: 'buyer',
+        personalInfo: {
+          firstName: 'Updated',
+          lastName: 'User',
+        },
+        locationInfo: {
+          state: 'Texas',
+          district: 'Houston',
+          municipality: 'Houston City',
+        },
+        farmInfo: {
+          farmerType: 'Conventional',
+          farmingScale: 'Medium',
+        },
+        loginCredentials: {
+          email: 'updated@example.com',
+          password: 'newpassword123',
+        },
       };
 
       const response = await request(app)
@@ -162,17 +256,24 @@ describe('User Routes', () => {
         .send(updateData)
         .expect(200);
 
-      expect(response.body.name).toBe(updateData.name);
-      expect(response.body.email).toBe(updateData.email);
-      expect(response.body.role).toBe(updateData.role);
+      expect(response.body.personalInfo.firstName).toBe(updateData.personalInfo.firstName);
+      expect(response.body.loginCredentials.email).toBe(updateData.loginCredentials.email);
+      expect(response.body.farmInfo.farmerType).toBe(updateData.farmInfo.farmerType);
     });
 
     it('should return 404 if user not found', async () => {
       const nonExistentId = new mongoose.Types.ObjectId();
 
+      const updateData = {
+        personalInfo: {
+          firstName: 'Updated',
+          lastName: 'User',
+        },
+      };
+
       const response = await request(app)
         .put(`/api/users/${nonExistentId}`)
-        .send({ name: 'Updated User' })
+        .send(updateData)
         .expect(404);
 
       expect(response.body.message).toBe('User not found');
@@ -182,10 +283,23 @@ describe('User Routes', () => {
   describe('DELETE /api/users/:id', () => {
     it('should delete user', async () => {
       const user = new User({
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password123',
-        role: 'farmer',
+        personalInfo: {
+          firstName: 'Test',
+          lastName: 'User',
+        },
+        locationInfo: {
+          state: 'California',
+          district: 'Los Angeles',
+          municipality: 'LA City',
+        },
+        farmInfo: {
+          farmerType: 'Organic',
+          farmingScale: 'Small',
+        },
+        loginCredentials: {
+          email: 'test@example.com',
+          password: 'password123',
+        },
       });
       await user.save();
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import userRoutes from './routes/users';
+import registrationRoutes from './routes/registration';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import httpLogger from './middleware/httpLogger';
@@ -34,6 +35,7 @@ app.get('/', (_req, res) => {
 
 // API Routes
 app.use('/api/users', userRoutes);
+app.use('/api/registration', registrationRoutes);
 
 // MongoDB connection
 const connectDB = async () => {
