@@ -7,6 +7,7 @@ import httpLogger from '../middleware/httpLogger';
 import registrationRoutes from '../routes/registration';
 import { User } from '../models/User';
 import { describe, beforeEach, it, expect } from '@jest/globals';
+import { TempRegistration } from '../models/TempRegistration';
 
 // Create test app
 const createTestApp = () => {
@@ -40,6 +41,8 @@ describe('Registration API', () => {
   beforeEach(async () => {
     // Clear the database before each test
     await User.deleteMany({});
+    // Also clear temp registrations
+    await TempRegistration.deleteMany({});
     sessionId = `test_${Date.now()}`;
   });
 
@@ -91,11 +94,21 @@ describe('Registration API', () => {
 
   describe('POST /api/registration/step2', () => {
     it('should save location successfully', async () => {
+      // First create a session with step 1
+      const step1Response = await request(app).post('/api/registration/step1').send({
+        firstName: 'John',
+        lastName: 'Doe',
+        sessionId,
+      });
+
+      expect(step1Response.status).toBe(200);
+      const actualSessionId = step1Response.body.data.sessionId;
+
       const stepData = {
         state: 'Bagmati Province',
         district: 'Kathmandu',
         municipality: 'Kathmandu Metropolitan City',
-        sessionId,
+        sessionId: actualSessionId,
       };
 
       const response = await request(app)

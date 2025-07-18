@@ -7,12 +7,14 @@ The registration API allows users to complete their registration in 6 steps, cor
 ### 🔄 **Data Storage Flow**
 
 **NEW: Temporary Storage System**
+
 - **Steps 1-5**: Data is stored in **temporary database** (`TempRegistration` collection)
 - **Step 6**: Data is moved from temporary to **permanent database** (`User` collection)
 - **After completion**: Temporary data is automatically deleted
 - **Auto-cleanup**: Temporary data expires after 24 hours
 
 **Benefits:**
+
 - ✅ **Session Recovery**: Users can refresh page without losing progress
 - ✅ **Data Persistence**: Each step saves data to database immediately
 - ✅ **Progress Tracking**: Can retrieve current progress at any time
@@ -223,11 +225,13 @@ POST /api/registration/step5
 **Question:** "Create a Password for your account."
 
 ### Endpoint
+
 ```
 POST /api/registration/complete
 ```
 
 ### Request Body (NEW: Simplified)
+
 ```json
 {
   "password": "securePassword123",
@@ -275,11 +279,13 @@ POST /api/registration/complete
 ## Get Registration Progress
 
 ### Endpoint
+
 ```
 GET /api/registration/progress/:sessionId
 ```
 
 ### Response
+
 ```json
 {
   "message": "Registration progress retrieved",
