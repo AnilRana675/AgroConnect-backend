@@ -23,6 +23,9 @@ const nodeGlobals = {
 
 module.exports = [
   {
+    ignores: ['dist/**/*', 'node_modules/**/*', 'coverage/**/*'],
+  },
+  {
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',

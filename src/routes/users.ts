@@ -1,5 +1,6 @@
 import express from 'express';
 import { User } from '../models/User';
+import logger from '../utils/logger';
 
 const router = express.Router();
 
@@ -9,6 +10,7 @@ router.get('/', async (req, res) => {
     const users = await User.find().select('-password');
     res.json(users);
   } catch (error) {
+    logger.error('Error fetching users:', error);
     res.status(500).json({ message: 'Error fetching users', error });
   }
 });
@@ -22,6 +24,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json(user);
   } catch (error) {
+    logger.error('Error fetching user:', error);
     res.status(500).json({ message: 'Error fetching user', error });
   }
 });
@@ -40,10 +43,11 @@ router.post('/', async (req, res) => {
     const newUser = new User({ name, email, password, role });
     await newUser.save();
 
-    const { password: _password, ...userResponse } = newUser.toObject();
+    const { password: _, ...userResponse } = newUser.toObject();
 
     res.status(201).json(userResponse);
   } catch (error) {
+    logger.error('Error creating user:', error);
     res.status(400).json({ message: 'Error creating user', error });
   }
 });
@@ -64,6 +68,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(user);
   } catch (error) {
+    logger.error('Error updating user:', error);
     res.status(400).json({ message: 'Error updating user', error });
   }
 });
@@ -77,6 +82,7 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
+    logger.error('Error deleting user:', error);
     res.status(500).json({ message: 'Error deleting user', error });
   }
 });
