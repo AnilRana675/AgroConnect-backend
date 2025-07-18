@@ -5,20 +5,6 @@ import logger from '../utils/logger';
 
 const router = express.Router();
 
-// Helper function to find or create temp registration
-async function findOrCreateTempRegistration(sessionId: string) {
-  let tempRegistration = await TempRegistration.findOne({ sessionId });
-
-  if (!tempRegistration) {
-    tempRegistration = new TempRegistration({
-      sessionId,
-      currentStep: 0,
-    });
-  }
-
-  return tempRegistration;
-}
-
 // Step 1: Save Name
 router.post('/step1', async (req, res) => {
   try {
@@ -35,14 +21,28 @@ router.post('/step1', async (req, res) => {
       sessionId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Store in temporary database
-    const tempRegistration = await findOrCreateTempRegistration(actualSessionId);
+    let tempRegistration = await TempRegistration.findOne({ sessionId: actualSessionId });
 
-    tempRegistration.personalInfo = {
-      firstName,
-      middleName,
-      lastName,
-    };
-    tempRegistration.currentStep = 1;
+    if (tempRegistration) {
+      // Update existing record
+      tempRegistration.personalInfo = {
+        firstName,
+        middleName,
+        lastName,
+      };
+      tempRegistration.currentStep = 1;
+    } else {
+      // Create new record
+      tempRegistration = new TempRegistration({
+        sessionId: actualSessionId,
+        personalInfo: {
+          firstName,
+          middleName,
+          lastName,
+        },
+        currentStep: 1,
+      });
+    }
 
     await tempRegistration.save();
     logger.info(
@@ -78,31 +78,6 @@ router.post('/step2', async (req, res) => {
       });
     }
 
-    if (!sessionId) {
-      return res.status(400).json({
-        message: 'Session ID is required',
-        step: 2,
-      });
-    }
-
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
-    if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 2,
-      });
-    }
-
-    // Update location info
-    tempRegistration.locationInfo = {
-      state,
-      district,
-      municipality,
-    };
-    tempRegistration.currentStep = 2;
-
-    await tempRegistration.save();
     logger.info(`Step 2 completed for session: ${sessionId}`);
 
     res.status(200).json({
@@ -134,30 +109,6 @@ router.post('/step3', async (req, res) => {
       });
     }
 
-    if (!sessionId) {
-      return res.status(400).json({
-        message: 'Session ID is required',
-        step: 3,
-      });
-    }
-
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
-    if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 3,
-      });
-    }
-
-    // Update farm info
-    if (!tempRegistration.farmInfo) {
-      tempRegistration.farmInfo = {};
-    }
-    tempRegistration.farmInfo.farmerType = farmerType;
-    tempRegistration.currentStep = 3;
-
-    await tempRegistration.save();
     logger.info(`Step 3 completed for session: ${sessionId}`);
 
     res.status(200).json({
@@ -187,30 +138,6 @@ router.post('/step4', async (req, res) => {
       });
     }
 
-    if (!sessionId) {
-      return res.status(400).json({
-        message: 'Session ID is required',
-        step: 4,
-      });
-    }
-
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
-    if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 4,
-      });
-    }
-
-    // Update farm info
-    if (!tempRegistration.farmInfo) {
-      tempRegistration.farmInfo = {};
-    }
-    tempRegistration.farmInfo.farmingScale = farmingScale;
-    tempRegistration.currentStep = 4;
-
-    await tempRegistration.save();
     logger.info(`Step 4 completed for session: ${sessionId}`);
 
     res.status(200).json({
@@ -240,14 +167,7 @@ router.post('/step5', async (req, res) => {
       });
     }
 
-    if (!sessionId) {
-      return res.status(400).json({
-        message: 'Session ID is required',
-        step: 5,
-      });
-    }
-
-    // Check if email already exists in permanent users
+    // Check if email already exists
     const existingUser = await User.findOne({ 'loginCredentials.email': email });
     if (existingUser) {
       return res.status(400).json({
@@ -256,23 +176,6 @@ router.post('/step5', async (req, res) => {
       });
     }
 
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
-    if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 5,
-      });
-    }
-
-    // Update email
-    if (!tempRegistration.loginCredentials) {
-      tempRegistration.loginCredentials = {};
-    }
-    tempRegistration.loginCredentials.email = email;
-    tempRegistration.currentStep = 5;
-
-    await tempRegistration.save();
     logger.info(`Step 5 completed for session: ${sessionId}`);
 
     res.status(200).json({
@@ -290,70 +193,43 @@ router.post('/step5', async (req, res) => {
   }
 });
 
-// Step 6: Complete Registration (Save Password and Create User)
+// Step 6: Complete Registration
 router.post('/complete', async (req, res) => {
   try {
-    const { password, sessionId } = req.body;
+    const { personalInfo, locationInfo, farmInfo, loginCredentials, sessionId } = req.body;
 
-    if (!password) {
+    // Validate all required fields
+    if (!personalInfo?.firstName || !personalInfo?.lastName) {
       return res.status(400).json({
-        message: 'Password is required',
+        message: 'Personal information is incomplete',
         step: 6,
       });
     }
 
-    if (!sessionId) {
+    if (!locationInfo?.state || !locationInfo?.district || !locationInfo?.municipality) {
       return res.status(400).json({
-        message: 'Session ID is required',
+        message: 'Location information is incomplete',
         step: 6,
       });
     }
 
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
-    if (!tempRegistration) {
+    if (!farmInfo?.farmerType || !farmInfo?.farmingScale) {
       return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
+        message: 'Farm information is incomplete',
         step: 6,
       });
     }
 
-    // Validate all data is complete
-    if (!tempRegistration.personalInfo?.firstName || !tempRegistration.personalInfo?.lastName) {
+    if (!loginCredentials?.email || !loginCredentials?.password) {
       return res.status(400).json({
-        message: 'Personal information is incomplete. Please complete all previous steps.',
+        message: 'Login credentials are incomplete',
         step: 6,
       });
     }
 
-    if (
-      !tempRegistration.locationInfo?.state ||
-      !tempRegistration.locationInfo?.district ||
-      !tempRegistration.locationInfo?.municipality
-    ) {
-      return res.status(400).json({
-        message: 'Location information is incomplete. Please complete all previous steps.',
-        step: 6,
-      });
-    }
-
-    if (!tempRegistration.farmInfo?.farmerType || !tempRegistration.farmInfo?.farmingScale) {
-      return res.status(400).json({
-        message: 'Farm information is incomplete. Please complete all previous steps.',
-        step: 6,
-      });
-    }
-
-    if (!tempRegistration.loginCredentials?.email) {
-      return res.status(400).json({
-        message: 'Email is missing. Please complete all previous steps.',
-        step: 6,
-      });
-    }
-
-    // Check if user already exists (double check)
+    // Check if user already exists
     const existingUser = await User.findOne({
-      'loginCredentials.email': tempRegistration.loginCredentials.email,
+      'loginCredentials.email': loginCredentials.email,
     });
     if (existingUser) {
       return res.status(400).json({
@@ -362,27 +238,21 @@ router.post('/complete', async (req, res) => {
       });
     }
 
-    // Create new user from temp data
+    // Create new user
     const newUser = new User({
-      personalInfo: tempRegistration.personalInfo,
-      locationInfo: tempRegistration.locationInfo,
-      farmInfo: tempRegistration.farmInfo,
-      loginCredentials: {
-        email: tempRegistration.loginCredentials.email,
-        password: password,
-      },
+      personalInfo,
+      locationInfo,
+      farmInfo,
+      loginCredentials,
     });
 
     await newUser.save();
-
-    // Delete temporary registration
-    await TempRegistration.deleteOne({ sessionId });
 
     // Remove password from response
     const userResponse = newUser.toObject();
     delete userResponse.loginCredentials.password;
 
-    logger.info(`Registration completed for user: ${tempRegistration.loginCredentials.email}`);
+    logger.info(`Registration completed for user: ${loginCredentials.email}`);
 
     res.status(201).json({
       message: 'Registration completed successfully',
@@ -394,39 +264,6 @@ router.post('/complete', async (req, res) => {
   } catch (error) {
     logger.error('Error completing registration:', error);
     res.status(500).json({ message: 'Server error completing registration', error });
-  }
-});
-
-// Get current registration progress
-router.get('/progress/:sessionId', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
-    if (!tempRegistration) {
-      return res.status(404).json({
-        message: 'Session not found',
-        currentStep: 0,
-      });
-    }
-
-    res.status(200).json({
-      message: 'Registration progress retrieved',
-      currentStep: tempRegistration.currentStep,
-      data: {
-        personalInfo: tempRegistration.personalInfo,
-        locationInfo: tempRegistration.locationInfo,
-        farmInfo: tempRegistration.farmInfo,
-        loginCredentials: tempRegistration.loginCredentials
-          ? {
-              email: tempRegistration.loginCredentials.email,
-            }
-          : undefined,
-      },
-    });
-  } catch (error) {
-    logger.error('Error getting registration progress:', error);
-    res.status(500).json({ message: 'Server error getting progress', error });
   }
 });
 

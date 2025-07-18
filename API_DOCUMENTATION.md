@@ -4,6 +4,20 @@
 
 The registration API allows users to complete their registration in 6 steps, corresponding to the onboarding questions.
 
+### 🔄 **Data Storage Flow**
+
+**NEW: Temporary Storage System**
+- **Steps 1-5**: Data is stored in **temporary database** (`TempRegistration` collection)
+- **Step 6**: Data is moved from temporary to **permanent database** (`User` collection)
+- **After completion**: Temporary data is automatically deleted
+- **Auto-cleanup**: Temporary data expires after 24 hours
+
+**Benefits:**
+- ✅ **Session Recovery**: Users can refresh page without losing progress
+- ✅ **Data Persistence**: Each step saves data to database immediately
+- ✅ **Progress Tracking**: Can retrieve current progress at any time
+- ✅ **Automatic Cleanup**: No manual cleanup needed
+
 ### Base URL
 
 ```
@@ -209,36 +223,19 @@ POST /api/registration/step5
 **Question:** "Create a Password for your account."
 
 ### Endpoint
-
 ```
 POST /api/registration/complete
 ```
 
-### Request Body
-
+### Request Body (NEW: Simplified)
 ```json
 {
-  "personalInfo": {
-    "firstName": "John",
-    "middleName": "Michael",
-    "lastName": "Doe"
-  },
-  "locationInfo": {
-    "state": "Bagmati Province",
-    "district": "Kathmandu",
-    "municipality": "Kathmandu Metropolitan City"
-  },
-  "farmInfo": {
-    "farmerType": "Organic Farming",
-    "farmingScale": "Small Scale (Less than 2 hectares)"
-  },
-  "loginCredentials": {
-    "email": "john.doe@example.com",
-    "password": "securePassword123"
-  },
+  "password": "securePassword123",
   "sessionId": "temp_1640995200000"
 }
 ```
+
+**Note:** All previous step data is automatically retrieved from temporary storage using the sessionId.
 
 ### Response
 
@@ -270,6 +267,40 @@ POST /api/registration/complete
   },
   "sessionId": "temp_1640995200000",
   "registrationComplete": true
+}
+```
+
+---
+
+## Get Registration Progress
+
+### Endpoint
+```
+GET /api/registration/progress/:sessionId
+```
+
+### Response
+```json
+{
+  "message": "Registration progress retrieved",
+  "currentStep": 3,
+  "data": {
+    "personalInfo": {
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "locationInfo": {
+      "state": "Bagmati Province",
+      "district": "Kathmandu",
+      "municipality": "Kathmandu Metropolitan City"
+    },
+    "farmInfo": {
+      "farmerType": "Organic Farming"
+    },
+    "loginCredentials": {
+      "email": "john.doe@example.com"
+    }
+  }
 }
 ```
 
@@ -379,29 +410,38 @@ curl -X POST http://localhost:5000/api/registration/step2 \
   }'
 ```
 
-### 4. Continue with Steps 3-5, then Complete
+### 4. Continue with Steps 3-5, then Complete (NEW: Simplified)
 
 ```bash
+# Step 3
+curl -X POST http://localhost:5000/api/registration/step3 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "farmerType": "Organic Farming",
+    "sessionId": "temp_1640995200000"
+  }'
+
+# Step 4
+curl -X POST http://localhost:5000/api/registration/step4 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "farmingScale": "Small Scale (Less than 2 hectares)",
+    "sessionId": "temp_1640995200000"
+  }'
+
+# Step 5
+curl -X POST http://localhost:5000/api/registration/step5 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "sessionId": "temp_1640995200000"
+  }'
+
+# Step 6 - Complete (only need password!)
 curl -X POST http://localhost:5000/api/registration/complete \
   -H "Content-Type: application/json" \
   -d '{
-    "personalInfo": {
-      "firstName": "John",
-      "lastName": "Doe"
-    },
-    "locationInfo": {
-      "state": "Bagmati Province",
-      "district": "Kathmandu",
-      "municipality": "Kathmandu Metropolitan City"
-    },
-    "farmInfo": {
-      "farmerType": "Organic Farming",
-      "farmingScale": "Small Scale (Less than 2 hectares)"
-    },
-    "loginCredentials": {
-      "email": "john.doe@example.com",
-      "password": "securePassword123"
-    },
+    "password": "securePassword123",
     "sessionId": "temp_1640995200000"
   }'
 ```
