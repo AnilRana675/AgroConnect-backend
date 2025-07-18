@@ -8,13 +8,13 @@ export interface IUser extends Document {
     lastName: string;
   };
   locationInfo: {
-    state: string;
+    province: string;
     district: string;
     municipality: string;
   };
   farmInfo: {
     farmerType: string;
-    farmingScale: string;
+    economicScale: string;
   };
   loginCredentials: {
     email: string;
@@ -32,13 +32,13 @@ const UserSchema: Schema = new Schema(
       lastName: { type: String, required: true, trim: true },
     },
     locationInfo: {
-      state: { type: String, required: true, trim: true },
+      province: { type: String, required: true, trim: true },
       district: { type: String, required: true, trim: true },
       municipality: { type: String, required: true, trim: true },
     },
     farmInfo: {
       farmerType: { type: String, required: true, trim: true },
-      farmingScale: { type: String, required: true, trim: true },
+      economicScale: { type: String, required: true, trim: true },
     },
     loginCredentials: {
       email: { type: String, required: true, unique: true, lowercase: true, trim: true },

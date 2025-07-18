@@ -11,7 +11,7 @@ interface CacheConfig {
 type UserProfile = {
   farmerType: string;
   location: string;
-  farmingScale: string;
+  economicScale: string;
 };
 
 interface CacheItem<T = unknown> {

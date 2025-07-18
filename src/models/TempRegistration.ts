@@ -8,13 +8,13 @@ export interface ITempRegistration extends Document {
     lastName?: string;
   };
   locationInfo?: {
-    state?: string;
+    province?: string;
     district?: string;
     municipality?: string;
   };
   farmInfo?: {
     farmerType?: string;
-    farmingScale?: string;
+    economicScale?: string;
   };
   loginCredentials?: {
     email?: string;
@@ -34,13 +34,13 @@ const TempRegistrationSchema: Schema = new Schema(
       lastName: { type: String, trim: true },
     },
     locationInfo: {
-      state: { type: String, trim: true },
+      province: { type: String, trim: true },
       district: { type: String, trim: true },
       municipality: { type: String, trim: true },
     },
     farmInfo: {
       farmerType: { type: String, trim: true },
-      farmingScale: { type: String, trim: true },
+      economicScale: { type: String, trim: true },
     },
     loginCredentials: {
       email: { type: String, lowercase: true, trim: true },

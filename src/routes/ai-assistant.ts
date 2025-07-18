@@ -73,16 +73,16 @@ router.post('/ask', optionalAuth, async (req, res) => {
         if (user) {
           userProfile = {
             farmerType: user.farmInfo.farmerType,
-            location: `${user.locationInfo.district}, ${user.locationInfo.state}`,
-            farmingScale: user.farmInfo.farmingScale,
+            location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
+            economicScale: user.farmInfo.economicScale,
           };
           userDetails = {
             userId: user._id,
             name: `${user.personalInfo.firstName}${user.personalInfo.middleName ? ' ' + user.personalInfo.middleName : ''} ${user.personalInfo.lastName}`,
             district: user.locationInfo.district,
-            state: user.locationInfo.state,
+            province: user.locationInfo.province,
             farmerType: user.farmInfo.farmerType,
-            farmingScale: user.farmInfo.farmingScale,
+            economicScale: user.farmInfo.economicScale,
           };
         }
       } catch (error) {
@@ -185,8 +185,8 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
 
     const userProfile = {
       farmerType: user.farmInfo.farmerType,
-      location: `${user.locationInfo.district}, ${user.locationInfo.state}`,
-      farmingScale: user.farmInfo.farmingScale,
+      location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
+      economicScale: user.farmInfo.economicScale,
     };
 
     const tips = await githubModelsAI.getWeeklyTips(userProfile);
@@ -206,14 +206,14 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
           userId: user._id,
           name: `${user.personalInfo.firstName}${user.personalInfo.middleName ? ' ' + user.personalInfo.middleName : ''} ${user.personalInfo.lastName}`,
           farmerType: user.farmInfo.farmerType,
-          farmingScale: user.farmInfo.farmingScale,
+          economicScale: user.farmInfo.economicScale,
           municipality: user.locationInfo.municipality,
         },
         seasonalContext: {
           currentSeason,
           weekOfYear,
           month: currentDate.toLocaleString('default', { month: 'long' }),
-          applicableRegion: user.locationInfo.state,
+          applicableRegion: user.locationInfo.province,
         },
       },
       metadata: {
@@ -417,8 +417,8 @@ router.get('/weekly-tips', authenticate, async (req, res) => {
 
     const userProfile = {
       farmerType: user.farmInfo.farmerType,
-      location: `${user.locationInfo.district}, ${user.locationInfo.state}`,
-      farmingScale: user.farmInfo.farmingScale,
+      location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
+      economicScale: user.farmInfo.economicScale,
     };
 
     const tips = await githubModelsAI.getWeeklyTips(userProfile);
@@ -440,7 +440,7 @@ router.post('/ask-anonymous', async (req, res) => {
   const requestId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const { question, location, farmerType, farmingScale } = req.body;
+    const { question, location, farmerType, economicScale } = req.body;
 
     if (!question) {
       return res.status(400).json({
@@ -452,11 +452,11 @@ router.post('/ask-anonymous', async (req, res) => {
     }
 
     const userProfile =
-      location || farmerType || farmingScale
+      location || farmerType || economicScale
         ? {
             farmerType: farmerType || 'general',
             location: location || 'Nepal',
-            farmingScale: farmingScale || 'general',
+            economicScale: economicScale || 'general',
           }
         : null;
 
