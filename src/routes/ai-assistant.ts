@@ -1,5 +1,5 @@
 import express from 'express';
-import openRouterAI from '../services/openRouterAI';
+import githubModelsAI from '../services/githubModelsAI';
 import { User } from '../models/User';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import logger from '../utils/logger';
@@ -8,15 +8,17 @@ const router = express.Router();
 
 // Check if AI service is configured
 router.get('/status', (req, res) => {
-  const isConfigured = openRouterAI.isConfigured();
+  const isConfigured = githubModelsAI.isConfigured();
   res.json({
     success: true,
     configured: isConfigured,
-    message: isConfigured ? 'AI service is ready' : 'AI service not configured - missing API key',
+    message: isConfigured
+      ? 'AI service is ready'
+      : 'AI service not configured - missing GitHub token',
     service: {
-      name: 'OpenRouter AI Service',
-      provider: 'OpenRouter',
-      model: 'google/gemma-3n-e2b-it:free',
+      name: 'GitHub Models AI Service',
+      provider: 'GitHub Models',
+      model: 'Llama-3.2-11B-Vision-Instruct',
       features: [
         'Farming advice',
         'Weekly tips generation',
@@ -74,7 +76,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
       }
     }
 
-    const answer = await openRouterAI.getFarmingAdvice({
+    const answer = await githubModelsAI.getFarmingAdvice({
       question,
       userProfile: userProfile || undefined,
     });
@@ -93,8 +95,8 @@ router.post('/ask', optionalAuth, async (req, res) => {
       metadata: {
         requestId,
         responseTime: `${responseTime}ms`,
-        service: 'OpenRouter AI',
-        model: 'google/gemma-3n-e2b-it:free',
+        service: 'GitHub Models AI',
+        model: 'Llama-3.2-11B-Vision-Instruct',
         personalizationApplied: !!userProfile,
         contextType: userProfile ? 'user_profile' : 'anonymous',
         timestamp: new Date().toISOString(),
@@ -118,7 +120,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
       metadata: {
         responseTime: `${responseTime}ms`,
         timestamp: new Date().toISOString(),
-        service: 'OpenRouter AI',
+        service: 'GitHub Models AI',
         errorType: 'internal_server_error',
       },
     });
@@ -159,7 +161,7 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
       farmingScale: user.farmInfo.farmingScale,
     };
 
-    const tips = await openRouterAI.getWeeklyTips(userProfile);
+    const tips = await githubModelsAI.getWeeklyTips(userProfile);
     const responseTime = Date.now() - startTime;
 
     // Get current date info for seasonal context
@@ -189,8 +191,8 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
       metadata: {
         requestId,
         responseTime: `${responseTime}ms`,
-        service: 'OpenRouter AI',
-        model: 'google/gemma-3n-e2b-it:free',
+        service: 'GitHub Models AI',
+        model: 'Llama-3.2-11B-Vision-Instruct',
         generatedAt: new Date().toISOString(),
         apiVersion: '1.0',
         contentType: 'weekly_farming_tips',
@@ -212,7 +214,7 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
       metadata: {
         responseTime: `${responseTime}ms`,
         timestamp: new Date().toISOString(),
-        service: 'OpenRouter AI',
+        service: 'GitHub Models AI',
         errorType: 'internal_server_error',
       },
     });
@@ -252,7 +254,7 @@ router.post('/diagnose', async (req, res) => {
       });
     }
 
-    const diagnosis = await openRouterAI.identifyCropDisease(description, cropType);
+    const diagnosis = await githubModelsAI.identifyCropDisease(description, cropType);
     const responseTime = Date.now() - startTime;
 
     // Calculate risk level based on keywords in description
@@ -283,8 +285,8 @@ router.post('/diagnose', async (req, res) => {
       metadata: {
         requestId,
         responseTime: `${responseTime}ms`,
-        service: 'OpenRouter AI',
-        model: 'google/gemma-3n-e2b-it:free',
+        service: 'GitHub Models AI',
+        model: 'Llama-3.2-11B-Vision-Instruct',
         analyzedAt: new Date().toISOString(),
         apiVersion: '1.0',
         contentType: 'crop_disease_diagnosis',
@@ -307,7 +309,7 @@ router.post('/diagnose', async (req, res) => {
       metadata: {
         responseTime: `${responseTime}ms`,
         timestamp: new Date().toISOString(),
-        service: 'OpenRouter AI',
+        service: 'GitHub Models AI',
         errorType: 'internal_server_error',
       },
     });
@@ -391,7 +393,7 @@ router.get('/weekly-tips', authenticate, async (req, res) => {
       farmingScale: user.farmInfo.farmingScale,
     };
 
-    const tips = await openRouterAI.getWeeklyTips(userProfile);
+    const tips = await githubModelsAI.getWeeklyTips(userProfile);
 
     res.json({
       tips,
@@ -430,7 +432,7 @@ router.post('/ask-anonymous', async (req, res) => {
           }
         : null;
 
-    const answer = await openRouterAI.getFarmingAdvice({
+    const answer = await githubModelsAI.getFarmingAdvice({
       question,
       userProfile: userProfile || undefined,
     });
@@ -450,8 +452,8 @@ router.post('/ask-anonymous', async (req, res) => {
       metadata: {
         requestId,
         responseTime: `${responseTime}ms`,
-        service: 'OpenRouter AI',
-        model: 'google/gemma-3n-e2b-it:free',
+        service: 'GitHub Models AI',
+        model: 'Llama-3.2-11B-Vision-Instruct',
         userType: 'anonymous',
         contextType: userProfile ? 'partial_profile' : 'general',
         timestamp: new Date().toISOString(),
@@ -476,7 +478,7 @@ router.post('/ask-anonymous', async (req, res) => {
       metadata: {
         responseTime: `${responseTime}ms`,
         timestamp: new Date().toISOString(),
-        service: 'OpenRouter AI',
+        service: 'GitHub Models AI',
         errorType: 'internal_server_error',
       },
     });
