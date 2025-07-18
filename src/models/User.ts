@@ -1,37 +1,47 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
-  name: string;
-  email: string;
-  password: string;
-  role: 'farmer' | 'buyer' | 'admin';
+  personalInfo: {
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+  };
+  locationInfo: {
+    state: string;
+    district: string;
+    municipality: string;
+  };
+  farmInfo: {
+    farmerType: string;
+    farmingScale: string;
+  };
+  loginCredentials: {
+    email: string;
+    password?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
 
 const UserSchema: Schema = new Schema(
   {
-    name: {
-      type: String,
-      required: [true, 'Name is required'],
-      trim: true,
+    personalInfo: {
+      firstName: { type: String, required: true, trim: true },
+      middleName: { type: String, trim: true },
+      lastName: { type: String, required: true, trim: true },
     },
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-      lowercase: true,
-      trim: true,
+    locationInfo: {
+      state: { type: String, required: true, trim: true },
+      district: { type: String, required: true, trim: true },
+      municipality: { type: String, required: true, trim: true },
     },
-    password: {
-      type: String,
-      required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
+    farmInfo: {
+      farmerType: { type: String, required: true, trim: true },
+      farmingScale: { type: String, required: true, trim: true },
     },
-    role: {
-      type: String,
-      enum: ['farmer', 'buyer', 'admin'],
-      default: 'farmer',
+    loginCredentials: {
+      email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+      password: { type: String, required: true, minlength: 6 },
     },
   },
   {

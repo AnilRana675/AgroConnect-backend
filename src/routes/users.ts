@@ -1,13 +1,13 @@
 import express from 'express';
-import { User } from '../models/User';
+import { User, IUser } from '../models/User';
 import logger from '../utils/logger';
 
 const router = express.Router();
 
 // GET /api/users - Get all users
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
   try {
-    const users = await User.find().select('-password');
+    const users = await User.find().select('-loginCredentials.password');
     res.json(users);
   } catch (error) {
     logger.error('Error fetching users:', error);
@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 // GET /api/users/:id - Get user by ID
 router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id).select('-loginCredentials.password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -32,19 +32,24 @@ router.get('/:id', async (req, res) => {
 // POST /api/users - Create new user
 router.post('/', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-
+    const { personalInfo, locationInfo, farmInfo, loginCredentials } = req.body.user || req.body;
+    if (!personalInfo || !locationInfo || !farmInfo || !loginCredentials) {
+      return res.status(400).json({ message: 'Missing required user information' });
+    }
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ 'loginCredentials.email': loginCredentials.email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
-
-    const newUser = new User({ name, email, password, role });
+    const newUser = new User({ personalInfo, locationInfo, farmInfo, loginCredentials });
     await newUser.save();
-
-    const { password: _, ...userResponse } = newUser.toObject();
-
+    const userResponse = newUser.toObject();
+    if (
+      userResponse.loginCredentials &&
+      typeof userResponse.loginCredentials.password !== 'undefined'
+    ) {
+      delete userResponse.loginCredentials.password;
+    }
     res.status(201).json(userResponse);
   } catch (error) {
     logger.error('Error creating user:', error);
@@ -55,17 +60,19 @@ router.post('/', async (req, res) => {
 // PUT /api/users/:id - Update user
 router.put('/:id', async (req, res) => {
   try {
-    const { name, email, role } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { name, email, role },
-      { new: true, runValidators: true },
-    ).select('-password');
-
+    const { personalInfo, locationInfo, farmInfo, loginCredentials } = req.body.user || req.body;
+    const updateData: Partial<IUser> = {};
+    if (personalInfo) updateData.personalInfo = personalInfo;
+    if (locationInfo) updateData.locationInfo = locationInfo;
+    if (farmInfo) updateData.farmInfo = farmInfo;
+    if (loginCredentials) updateData.loginCredentials = loginCredentials;
+    const user = await User.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true,
+    }).select('-loginCredentials.password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
     res.json(user);
   } catch (error) {
     logger.error('Error updating user:', error);
