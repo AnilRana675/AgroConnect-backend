@@ -3,6 +3,8 @@ import { User } from '../models/User';
 import { TempRegistration } from '../models/TempRegistration';
 import authUtils from '../utils/auth';
 import logger from '../utils/logger';
+import redisService from '../services/redisService';
+import { cacheMiddleware } from '../middleware/cache';
 
 const router = express.Router();
 
@@ -491,48 +493,55 @@ router.get('/progress/:sessionId', async (req, res) => {
 });
 
 // Get registration options/metadata
-router.get('/options', async (req, res) => {
-  try {
-    const options = {
-      agricultureTypes: [
-        'Organic Farming',
-        'Conventional Farming',
-        'Sustainable Agriculture',
-        'Permaculture',
-        'Hydroponics',
-        'Livestock Farming',
-        'Dairy Farming',
-        'Poultry Farming',
-        'Aquaculture',
-        'Mixed Farming',
-      ],
-      economicScales: [
-        'Small Scale (Less than 2 hectares)',
-        'Medium Scale (2-10 hectares)',
-        'Large Scale (10-50 hectares)',
-        'Commercial Scale (50+ hectares)',
-        'Subsistence Farming',
-        'Semi-Commercial',
-      ],
-      states: [
-        'Province 1',
-        'Province 2',
-        'Bagmati Province',
-        'Gandaki Province',
-        'Lumbini Province',
-        'Karnali Province',
-        'Sudurpashchim Province',
-      ],
-    };
+router.get(
+  '/options',
+  cacheMiddleware({
+    ttl: redisService.getRegistrationOptionsTTL(),
+    keyGenerator: () => redisService.generateRegistrationOptionsKey(),
+  }),
+  async (req, res) => {
+    try {
+      const options = {
+        agricultureTypes: [
+          'Organic Farming',
+          'Conventional Farming',
+          'Sustainable Agriculture',
+          'Permaculture',
+          'Hydroponics',
+          'Livestock Farming',
+          'Dairy Farming',
+          'Poultry Farming',
+          'Aquaculture',
+          'Mixed Farming',
+        ],
+        economicScales: [
+          'Small Scale (Less than 2 hectares)',
+          'Medium Scale (2-10 hectares)',
+          'Large Scale (10-50 hectares)',
+          'Commercial Scale (50+ hectares)',
+          'Subsistence Farming',
+          'Semi-Commercial',
+        ],
+        states: [
+          'Province 1',
+          'Province 2',
+          'Bagmati Province',
+          'Gandaki Province',
+          'Lumbini Province',
+          'Karnali Province',
+          'Sudurpashchim Province',
+        ],
+      };
 
-    res.status(200).json({
-      message: 'Registration options retrieved successfully',
-      options,
-    });
-  } catch (error) {
-    logger.error('Error getting registration options:', error);
-    res.status(500).json({ message: 'Server error getting options', error });
-  }
-});
+      res.status(200).json({
+        message: 'Registration options retrieved successfully',
+        options,
+      });
+    } catch (error) {
+      logger.error('Error getting registration options:', error);
+      res.status(500).json({ message: 'Server error getting options', error });
+    }
+  },
+);
 
 export default router;

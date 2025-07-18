@@ -10,10 +10,12 @@ import userRoutes from './routes/users';
 import registrationRoutes from './routes/registration';
 import aiAssistantRoutes from './routes/ai-assistant';
 import authRoutes from './routes/auth';
+import cacheRoutes from './routes/cache';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import httpLogger from './middleware/httpLogger';
 import logger from './utils/logger';
+import redisService from './services/redisService';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +44,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/registration', registrationRoutes);
 app.use('/api/ai', aiAssistantRoutes);
+app.use('/api/cache', cacheRoutes);
 
 // MongoDB connection
 const connectDB = async () => {
@@ -57,12 +60,39 @@ const connectDB = async () => {
   }
 };
 
-// Start server after connecting to database
+// Redis connection
+const connectRedis = async () => {
+  try {
+    await redisService.connect();
+    logger.info('Redis connected successfully');
+  } catch (error) {
+    logger.warn('Redis connection failed, continuing without cache:', error);
+  }
+};
+
+// Start server after connecting to database and Redis
 const startServer = async () => {
   await connectDB();
+  await connectRedis();
+
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
   });
 };
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  await redisService.disconnect();
+  await mongoose.connection.close();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  logger.info('SIGINT received, shutting down gracefully');
+  await redisService.disconnect();
+  await mongoose.connection.close();
+  process.exit(0);
+});
 
 startServer();

@@ -1,8 +1,10 @@
 import express from 'express';
 import githubModelsAI from '../services/githubModelsAI';
-import { User } from '../models/User';
+import { User, IUser } from '../models/User';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import logger from '../utils/logger';
+import redisService from '../services/redisService';
+// import { cacheMiddleware } from '../middleware/cache';
 
 const router = express.Router();
 
@@ -55,7 +57,19 @@ router.post('/ask', optionalAuth, async (req, res) => {
     const targetUserId = req.user?.userId || userId;
     if (targetUserId) {
       try {
-        const user = await User.findById(targetUserId);
+        // Check cache for user profile first
+        const userProfileKey = redisService.generateUserProfileKey(targetUserId);
+        let user = await redisService.get<IUser>(userProfileKey);
+
+        if (!user) {
+          // Fetch from database if not in cache
+          user = await User.findById(targetUserId);
+          if (user) {
+            // Cache user profile
+            await redisService.set(userProfileKey, user, redisService.getUserProfileTTL());
+          }
+        }
+
         if (user) {
           userProfile = {
             farmerType: user.farmInfo.farmerType,
@@ -76,10 +90,24 @@ router.post('/ask', optionalAuth, async (req, res) => {
       }
     }
 
-    const answer = await githubModelsAI.getFarmingAdvice({
-      question,
-      userProfile: userProfile || undefined,
-    });
+    // Check cache for AI response
+    const aiResponseKey = redisService.generateAIResponseKey(question, userProfile || undefined);
+    let answer = await redisService.get<string>(aiResponseKey);
+    let cached = false;
+
+    if (!answer) {
+      // Generate new AI response if not in cache
+      answer = await githubModelsAI.getFarmingAdvice({
+        question,
+        userProfile: userProfile || undefined,
+      });
+
+      // Cache the AI response
+      await redisService.set(aiResponseKey, answer, redisService.getAIResponseTTL());
+    } else {
+      cached = true;
+      logger.debug(`AI response cache hit for question: ${question.substring(0, 50)}...`);
+    }
 
     const responseTime = Date.now() - startTime;
 
@@ -106,7 +134,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
         questionLength: question.length,
         answerLength: answer.length,
         processingTime: responseTime,
-        cached: false,
+        cached: cached,
         confidenceScore: 0.85, // This could be enhanced with actual confidence scoring
       },
     });

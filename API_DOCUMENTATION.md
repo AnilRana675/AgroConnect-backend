@@ -818,6 +818,41 @@ GET /api/ai/weekly-tips/:userId
 
 ---
 
+## Caching System
+
+The API implements Redis-based caching for improved performance:
+
+### Cache Features
+- **Redis Cloud**: Primary caching with Redis Cloud service
+- **In-Memory Fallback**: Automatic fallback when Redis is unavailable
+- **TTL Management**: Configurable cache expiration times
+- **Cache Statistics**: Real-time cache hit/miss tracking
+- **Cache Invalidation**: Manual cache clearing capabilities
+
+### Cache Management Endpoints
+
+#### Get Cache Statistics
+```
+GET /api/cache/stats
+```
+
+#### Clear All Cache
+```
+DELETE /api/cache/clear
+```
+
+#### Clear Specific Cache Pattern
+```
+DELETE /api/cache/clear/:pattern
+```
+
+#### Warm Up Cache
+```
+POST /api/cache/warmup
+```
+
+---
+
 ## Usage Examples
 
 ### 1. Check AI Service Status
