@@ -43,7 +43,7 @@ router.post('/', async (req, res) => {
     const newUser = new User({ name, email, password, role });
     await newUser.save();
 
-    const { password: _password, ...userResponse } = newUser.toObject();
+    const { password: _, ...userResponse } = newUser.toObject();
 
     res.status(201).json(userResponse);
   } catch (error) {
