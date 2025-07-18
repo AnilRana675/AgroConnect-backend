@@ -31,12 +31,13 @@ AgroConnect Nepal aims to bridge the gap between traditional farming practices a
 
 ### 🤖 **AI-Powered Features (NEW!)**
 
-- 🌾 **AI Farming Assistant** - Personalized agricultural advice using OpenRouter AI
+- 🌾 **AI Farming Assistant** - Personalized agricultural advice using GitHub Models API
 - 🔍 **Crop Disease Diagnosis** - AI-powered disease identification and treatment recommendations
 - 📅 **Weekly Farming Tips** - Personalized weekly tips based on farmer profile and season
 - 🎯 **Context-Aware Responses** - Advice tailored to farmer type, location, and farming scale
 - 📊 **Risk Assessment** - Automated risk level calculation for crop diseases
 - 🌍 **Nepal-Specific Expertise** - Specialized knowledge for Nepali farming conditions
+- 🆓 **Free AI Service** - No cost limits using GitHub Models with Llama-3.2-11B-Vision-Instruct
 
 ### 🔐 **Authentication & Security**
 
@@ -44,6 +45,7 @@ AgroConnect Nepal aims to bridge the gap between traditional farming practices a
 - 🛡️ **Password Hashing** - Bcrypt with salt rounds for secure password storage
 - 🔒 **Protected Routes** - Authentication middleware for secured endpoints
 - 📊 **Request Tracking** - Unique request IDs and response time monitoring
+- 🔐 **GitHub Token Authentication** - Secure API access using GitHub personal access tokens
 
 ### 🔮 **Future Features (Phase 3)**
 
@@ -68,7 +70,7 @@ src/
 │   ├── registration.ts # Multi-step registration
 │   └── users.ts        # User CRUD operations
 ├── services/            # External service integrations
-│   └── openRouterAI.ts # OpenRouter AI service
+│   └── githubModelsAI.ts # GitHub Models AI service
 ├── tests/              # Test suites
 │   ├── ai-assistant.test.ts # AI assistant tests
 │   ├── registration.test.ts # Registration API tests
@@ -92,11 +94,12 @@ src/
 
 ### **Development Tools**
 
-- **Testing**: Jest with Supertest
+- **Testing**: Jest with Supertest (38 test cases)
 - **Linting**: ESLint with TypeScript support
 - **Formatting**: Prettier
 - **Git Hooks**: Husky for pre-commit checks
 - **Build**: TypeScript compiler
+- **AI Integration**: GitHub Models API with Llama-3.2-11B-Vision-Instruct
 
 ### **Security & Monitoring**
 
@@ -140,7 +143,7 @@ src/
    # .env
    PORT=5000
    MONGODB_URI=mongodb://localhost:27017/agroconnect
-   OPENROUTER_API_KEY=your_openrouter_api_key_here
+   GITHUB_TOKEN=your_github_token_here
    JWT_SECRET=your_jwt_secret_here
    JWT_EXPIRES_IN=7d
    NODE_ENV=development
@@ -375,8 +378,12 @@ test(users): add comprehensive user API tests
 - [x] Comprehensive testing
 - [x] API documentation
 
-### **Phase 2: AI Integration** 🚧
+### **Phase 2: AI Integration** ✅
 
+- [x] AI-powered farming assistant with GitHub Models
+- [x] Crop disease diagnosis system
+- [x] Weekly farming tips generation
+- [x] Context-aware agricultural advice
 - [ ] AI-powered chatbot in Nepali
 - [ ] Crop disease detection via image recognition
 - [ ] Yield prediction algorithms
@@ -393,7 +400,8 @@ test(users): add comprehensive user API tests
 
 ## 🐛 Known Issues
 
-- [ ] JWT authentication not yet implemented
+- [x] ~~JWT authentication not yet implemented~~ **COMPLETED**
+- [x] ~~AI integration pending~~ **COMPLETED with GitHub Models**
 - [ ] File upload for profile pictures pending
 - [ ] Password reset functionality in development
 - [ ] Email verification system planned

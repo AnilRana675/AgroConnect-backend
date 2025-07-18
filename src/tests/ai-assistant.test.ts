@@ -8,8 +8,8 @@ import aiAssistantRoutes from '../routes/ai-assistant';
 import { User } from '../models/User';
 import { describe, beforeEach, it, expect, jest } from '@jest/globals';
 
-// Mock the OpenRouter AI service
-jest.mock('../services/openRouterAI', () => ({
+// Mock the GitHub Models AI service
+jest.mock('../services/githubModelsAI', () => ({
   __esModule: true,
   default: {
     isConfigured: () => true,
