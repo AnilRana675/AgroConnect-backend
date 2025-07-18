@@ -72,11 +72,11 @@ router.post('/step1', async (req, res) => {
 // Step 2: Save Location
 router.post('/step2', async (req, res) => {
   try {
-    const { state, district, municipality, sessionId } = req.body;
+    const { province, district, municipality, sessionId } = req.body;
 
-    if (!state || !district || !municipality) {
+    if (!province || !district || !municipality) {
       return res.status(400).json({
-        message: 'State, district, and municipality are required',
+        message: 'Province, district, and municipality are required',
         step: 2,
       });
     }
@@ -99,7 +99,7 @@ router.post('/step2', async (req, res) => {
 
     // Update location info
     tempRegistration.locationInfo = {
-      state,
+      province,
       district,
       municipality,
     };
@@ -112,7 +112,7 @@ router.post('/step2', async (req, res) => {
       message: 'Location saved successfully',
       step: 2,
       data: {
-        state,
+        province,
         district,
         municipality,
         sessionId,
@@ -181,9 +181,9 @@ router.post('/step3', async (req, res) => {
 // Step 4: Save Economic Scale
 router.post('/step4', async (req, res) => {
   try {
-    const { farmingScale, sessionId } = req.body;
+    const { economicScale, sessionId } = req.body;
 
-    if (!farmingScale) {
+    if (!economicScale) {
       return res.status(400).json({
         message: 'Economic scale is required',
         step: 4,
@@ -210,7 +210,7 @@ router.post('/step4', async (req, res) => {
     if (!tempRegistration.farmInfo) {
       tempRegistration.farmInfo = {};
     }
-    tempRegistration.farmInfo.farmingScale = farmingScale;
+    tempRegistration.farmInfo.economicScale = economicScale;
     tempRegistration.currentStep = 4;
 
     await tempRegistration.save();
@@ -220,7 +220,7 @@ router.post('/step4', async (req, res) => {
       message: 'Economic scale saved successfully',
       step: 4,
       data: {
-        farmingScale,
+        economicScale,
         sessionId,
       },
       nextStep: 5,
@@ -342,7 +342,7 @@ router.post('/complete', async (req, res) => {
       }
 
       if (
-        !tempRegistration.locationInfo?.state ||
+        !tempRegistration.locationInfo?.province ||
         !tempRegistration.locationInfo?.district ||
         !tempRegistration.locationInfo?.municipality
       ) {
@@ -352,7 +352,7 @@ router.post('/complete', async (req, res) => {
         });
       }
 
-      if (!tempRegistration.farmInfo?.farmerType || !tempRegistration.farmInfo?.farmingScale) {
+      if (!tempRegistration.farmInfo?.farmerType || !tempRegistration.farmInfo?.economicScale) {
         return res.status(400).json({
           message: 'Farm information is incomplete. Please complete all previous steps.',
           step: 6,
@@ -386,7 +386,7 @@ router.post('/complete', async (req, res) => {
     }
 
     if (
-      !userData.locationInfo?.state ||
+      !userData.locationInfo?.province ||
       !userData.locationInfo?.district ||
       !userData.locationInfo?.municipality
     ) {
@@ -396,7 +396,7 @@ router.post('/complete', async (req, res) => {
       });
     }
 
-    if (!userData.farmInfo?.farmerType || !userData.farmInfo?.farmingScale) {
+    if (!userData.farmInfo?.farmerType || !userData.farmInfo?.economicScale) {
       return res.status(400).json({
         message: 'Farm information is incomplete',
         step: 6,

@@ -6,7 +6,7 @@ interface FarmingAdviceRequest {
   userProfile?: {
     farmerType: string;
     location: string;
-    farmingScale: string;
+    economicScale: string;
   };
 }
 
@@ -93,7 +93,7 @@ class GitHubModelsAIService {
   async getWeeklyTips(userProfile: {
     farmerType: string;
     location: string;
-    farmingScale: string;
+    economicScale: string;
   }): Promise<string> {
     if (!this.apiKey) {
       return 'AI service is not configured. Please check your GitHub token.';
@@ -101,7 +101,7 @@ class GitHubModelsAIService {
 
     try {
       const prompt = `Generate weekly farming tips for a ${userProfile.farmerType} farmer 
-                     in ${userProfile.location}, Nepal with ${userProfile.farmingScale} operations. 
+                     in ${userProfile.location}, Nepal with ${userProfile.economicScale} operations. 
                      Focus on current season activities, pest management, and crop care.`;
 
       const response = await fetch(`${this.baseURL}/chat/completions`, {
@@ -210,7 +210,7 @@ class GitHubModelsAIService {
     userProfile?: {
       farmerType: string;
       location: string;
-      farmingScale: string;
+      economicScale: string;
     },
   ): string {
     if (!userProfile) {
@@ -219,7 +219,7 @@ class GitHubModelsAIService {
 
     return `${question} 
            Context: I am a ${userProfile.farmerType} farmer in ${userProfile.location}, Nepal 
-           with ${userProfile.farmingScale} farming operations.`;
+           with ${userProfile.economicScale} farming operations.`;
   }
 
   /**
