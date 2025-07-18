@@ -19,17 +19,34 @@ AgroConnect Nepal aims to bridge the gap between traditional farming practices a
 
 ## 🚀 Features
 
-### ✅ **Current Features (Phase 1)**
+### ✅ **Current Features (Phase 1 & 2)**
+
 - 🔐 **Multi-step Farmer Registration** - 6-step onboarding process
 - 👥 **Farmer Classification** - Identifies farmer types (subsistence, commercial, etc.)
 - 📍 **Location-based Services** - State, district, and municipality mapping
 - 💾 **Temporary Session Management** - Progress saving during registration
 - 🔒 **Security Features** - Rate limiting, CORS, Helmet security headers
-- 📊 **Comprehensive Testing** - 25+ test cases with 100% pass rate
+- 📊 **Comprehensive Testing** - 38 test cases with 100% pass rate
 - 📝 **API Documentation** - Complete REST API documentation
 
-### 🔮 **Future Features (Phase 2)**
-- 🤖 **AI Assistant** - Voice-based question answering in Nepali
+### 🤖 **AI-Powered Features (NEW!)**
+
+- 🌾 **AI Farming Assistant** - Personalized agricultural advice using OpenRouter AI
+- 🔍 **Crop Disease Diagnosis** - AI-powered disease identification and treatment recommendations
+- 📅 **Weekly Farming Tips** - Personalized weekly tips based on farmer profile and season
+- 🎯 **Context-Aware Responses** - Advice tailored to farmer type, location, and farming scale
+- 📊 **Risk Assessment** - Automated risk level calculation for crop diseases
+- 🌍 **Nepal-Specific Expertise** - Specialized knowledge for Nepali farming conditions
+
+### 🔐 **Authentication & Security**
+
+- 🔑 **JWT Authentication** - Secure user authentication and authorization
+- 🛡️ **Password Hashing** - Bcrypt with salt rounds for secure password storage
+- 🔒 **Protected Routes** - Authentication middleware for secured endpoints
+- 📊 **Request Tracking** - Unique request IDs and response time monitoring
+
+### 🔮 **Future Features (Phase 3)**
+
 - 📸 **Image Recognition** - Crop disease identification from photos
 - 📈 **Yield Prediction** - Smart planning based on soil and crop data
 - 🌤️ **Weather Integration** - Real-time weather forecasts
@@ -39,20 +56,26 @@ AgroConnect Nepal aims to bridge the gap between traditional farming practices a
 
 ```
 src/
-├── controllers/          # Route controllers (future)
 ├── middleware/          # Custom middleware
-│   └── httpLogger.ts    # HTTP request logging
+│   ├── auth.ts         # JWT authentication middleware
+│   └── httpLogger.ts   # HTTP request logging
 ├── models/              # Database models
 │   ├── User.ts         # Main user model
 │   └── TempRegistration.ts # Temporary registration data
 ├── routes/              # API routes
-│   ├── users.ts        # User CRUD operations
-│   └── registration.ts # Multi-step registration
+│   ├── ai-assistant.ts # AI-powered farming assistant
+│   ├── auth.ts         # Authentication endpoints
+│   ├── registration.ts # Multi-step registration
+│   └── users.ts        # User CRUD operations
+├── services/            # External service integrations
+│   └── openRouterAI.ts # OpenRouter AI service
 ├── tests/              # Test suites
-│   ├── users.test.ts   # User API tests
-│   └── registration.test.ts # Registration API tests
-├── types/              # TypeScript type definitions
+│   ├── ai-assistant.test.ts # AI assistant tests
+│   ├── registration.test.ts # Registration API tests
+│   ├── setup.ts        # Test environment setup
+│   └── users.test.ts   # User API tests
 ├── utils/              # Utility functions
+│   ├── auth.ts         # Authentication utilities
 │   └── logger.ts       # Winston logger configuration
 └── index.ts            # Application entry point
 ```
@@ -60,6 +83,7 @@ src/
 ## 🛠️ Tech Stack
 
 ### **Backend**
+
 - **Runtime**: Node.js 18+
 - **Framework**: Express.js 5.1.0
 - **Language**: TypeScript 5.8.3
@@ -67,6 +91,7 @@ src/
 - **Authentication**: JWT (planned)
 
 ### **Development Tools**
+
 - **Testing**: Jest with Supertest
 - **Linting**: ESLint with TypeScript support
 - **Formatting**: Prettier
@@ -74,6 +99,7 @@ src/
 - **Build**: TypeScript compiler
 
 ### **Security & Monitoring**
+
 - **Security**: Helmet.js, CORS, Rate Limiting
 - **Logging**: Winston with file and console transports
 - **Monitoring**: HTTP request logging middleware
@@ -81,6 +107,7 @@ src/
 ## 📦 Installation
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - MongoDB instance (local or cloud)
 - Git
@@ -88,31 +115,39 @@ src/
 ### Quick Start
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/AnilRana675/AgroConnect-backend.git
    cd AgroConnect-backend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Environment Setup**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 4. **Environment Variables**
+
    ```bash
    # .env
    PORT=5000
    MONGODB_URI=mongodb://localhost:27017/agroconnect
+   OPENROUTER_API_KEY=your_openrouter_api_key_here
+   JWT_SECRET=your_jwt_secret_here
+   JWT_EXPIRES_IN=7d
    NODE_ENV=development
    ```
 
 5. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -144,6 +179,7 @@ npm run clean       # Clean build directory
 ## 🌐 API Endpoints
 
 ### **Registration API**
+
 ```
 GET    /api/registration/options     # Get registration options
 POST   /api/registration/step1       # Step 1: Name
@@ -155,7 +191,29 @@ POST   /api/registration/complete    # Step 6: Complete Registration
 GET    /api/registration/progress/:sessionId # Get progress
 ```
 
+### **AI Assistant API (NEW!)**
+
+```
+GET    /api/ai/status              # Check AI service status
+POST   /api/ai/ask                 # Get personalized farming advice
+POST   /api/ai/ask-anonymous       # Get general farming advice
+POST   /api/ai/diagnose            # Diagnose crop diseases
+GET    /api/ai/weekly-tips/:userId # Get weekly farming tips
+GET    /api/ai/weekly-tips         # Get weekly tips (authenticated)
+```
+
+### **Authentication API**
+
+```
+POST   /api/auth/login             # User login
+POST   /api/auth/logout            # User logout
+GET    /api/auth/me                # Get current user profile
+PUT    /api/auth/change-password   # Change user password
+POST   /api/auth/verify-token      # Verify JWT token
+```
+
 ### **User Management API**
+
 ```
 GET    /api/users           # Get all users
 GET    /api/users/:id       # Get user by ID
@@ -165,6 +223,7 @@ DELETE /api/users/:id       # Delete user
 ```
 
 ### **Health Check**
+
 ```
 GET    /                    # Health check endpoint
 ```
@@ -181,6 +240,7 @@ AgroConnect uses a **6-step registration process** to create personalized farmer
 6. **Step 6**: Password & Account Creation
 
 ### **Data Storage Strategy**
+
 - **Steps 1-5**: Temporary storage with 24-hour expiration
 - **Step 6**: Data migration to permanent storage
 - **Session Recovery**: Users can continue from any step
@@ -209,6 +269,7 @@ npm run test:coverage
 The platform supports various farmer types across Nepal:
 
 ### **Agriculture Types**
+
 - Organic Farming
 - Conventional Farming
 - Sustainable Agriculture
@@ -221,6 +282,7 @@ The platform supports various farmer types across Nepal:
 - Mixed Farming
 
 ### **Economic Scales**
+
 - Small Scale (Less than 2 hectares)
 - Medium Scale (2-10 hectares)
 - Large Scale (10-50 hectares)
@@ -229,6 +291,7 @@ The platform supports various farmer types across Nepal:
 - Semi-Commercial
 
 ### **Supported Provinces**
+
 - Province 1
 - Province 2
 - Bagmati Province
@@ -259,17 +322,20 @@ Comprehensive API documentation is available in [`API_DOCUMENTATION.md`](./API_D
 ## 🔄 Development Workflow
 
 ### **Code Quality**
+
 - **Pre-commit hooks** run linting and formatting
 - **TypeScript strict mode** for type safety
 - **ESLint** with TypeScript rules
 - **Prettier** for consistent formatting
 
 ### **Git Workflow**
+
 - **Branch**: `dev` for development
 - **Commits**: Conventional commit format required
 - **CI/CD**: Pre-commit hooks ensure code quality
 
 ### **Example Commit Messages**
+
 ```bash
 feat(registration): add multi-step registration flow
 fix(auth): resolve JWT token validation issue
@@ -302,6 +368,7 @@ test(users): add comprehensive user API tests
 ## 🗓️ Project Roadmap
 
 ### **Phase 1: Foundation** ✅
+
 - [x] Multi-step registration system
 - [x] Farmer classification
 - [x] Location-based services
@@ -309,6 +376,7 @@ test(users): add comprehensive user API tests
 - [x] API documentation
 
 ### **Phase 2: AI Integration** 🚧
+
 - [ ] AI-powered chatbot in Nepali
 - [ ] Crop disease detection via image recognition
 - [ ] Yield prediction algorithms
@@ -316,6 +384,7 @@ test(users): add comprehensive user API tests
 - [ ] Mobile app development
 
 ### **Phase 3: Advanced Features** 📅
+
 - [ ] Real-time notifications
 - [ ] Farmer community platform
 - [ ] Marketplace integration
@@ -339,6 +408,7 @@ test(users): add comprehensive user API tests
 ## 🔧 Environment Configuration
 
 ### **Development**
+
 ```bash
 NODE_ENV=development
 PORT=5000
@@ -347,6 +417,7 @@ LOG_LEVEL=debug
 ```
 
 ### **Production**
+
 ```bash
 NODE_ENV=production
 PORT=5000
@@ -377,4 +448,4 @@ This project is licensed under the **ISC License** - see the [LICENSE](LICENSE) 
 
 **Made with ❤️ for Nepali Farmers**
 
-*AgroConnect Nepal - Empowering Agriculture Through Technology*
+_AgroConnect Nepal - Empowering Agriculture Through Technology_
