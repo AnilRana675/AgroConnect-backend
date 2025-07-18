@@ -467,3 +467,34 @@ This project is licensed under the **ISC License** - see the [LICENSE](LICENSE) 
 **Made with ❤️ for Nepali Farmers**
 
 _AgroConnect Nepal - Empowering Agriculture Through Technology_
+
+# User Profile Structure
+
+The user profile now uses `economicScale` instead of `farmingScale`.
+
+## Example User Registration Payload
+
+```json
+{
+  "user": {
+    "personalInfo": {
+      "firstName": "Sita",
+      "middleName": "",
+      "lastName": "Rai"
+    },
+    "locationInfo": {
+      "state": "Koshi Province",
+      "district": "Dhankuta",
+      "municipality": "Dhankuta Municipality"
+    },
+    "farmInfo": {
+      "farmerType": "Horticulturist",
+      "economicScale": "Semi-Commercial"
+    },
+    "loginCredentials": {
+      "email": "sita.rai@example.com",
+      "password": "SecurePass!456"
+    }
+  }
+}
+```

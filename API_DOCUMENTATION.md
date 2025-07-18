@@ -155,7 +155,7 @@ POST /api/registration/step4
 
 ```json
 {
-  "farmingScale": "Small Scale (Less than 2 hectares)",
+  "economicScale": "Small Scale (Less than 2 hectares)",
   "sessionId": "temp_1640995200000"
 }
 ```
@@ -167,7 +167,7 @@ POST /api/registration/step4
   "message": "Economic scale saved successfully",
   "step": 4,
   "data": {
-    "farmingScale": "Small Scale (Less than 2 hectares)",
+    "economicScale": "Small Scale (Less than 2 hectares)",
     "sessionId": "temp_1640995200000"
   },
   "nextStep": 5
@@ -261,7 +261,7 @@ POST /api/registration/complete
     },
     "farmInfo": {
       "farmerType": "Organic Farming",
-      "farmingScale": "Small Scale (Less than 2 hectares)"
+      "economicScale": "Small Scale (Less than 2 hectares)"
     },
     "loginCredentials": {
       "email": "john.doe@example.com"
@@ -431,7 +431,7 @@ curl -X POST http://localhost:5000/api/registration/step3 \
 curl -X POST http://localhost:5000/api/registration/step4 \
   -H "Content-Type: application/json" \
   -d '{
-    "farmingScale": "Small Scale (Less than 2 hectares)",
+    "economicScale": "Small Scale (Less than 2 hectares)",
     "sessionId": "temp_1640995200000"
   }'
 
@@ -564,7 +564,7 @@ POST /api/ai/ask
     "userProfile": {
       "farmerType": "Rice Farming",
       "location": "Kathmandu, Bagmati Province",
-      "farmingScale": "Small Scale"
+      "economicScale": "Small Scale"
     },
     "userDetails": {
       "userId": "507f1f77bcf86cd799439011",
@@ -572,7 +572,7 @@ POST /api/ai/ask
       "district": "Kathmandu",
       "state": "Bagmati Province",
       "farmerType": "Rice Farming",
-      "farmingScale": "Small Scale"
+      "economicScale": "Small Scale"
     }
   },
   "metadata": {
@@ -612,7 +612,7 @@ POST /api/ai/ask-anonymous
   "question": "What is organic farming?",
   "location": "Nepal", // Optional
   "farmerType": "Organic Farming", // Optional
-  "farmingScale": "Small Scale" // Optional
+  "economicScale": "Small Scale" // Optional
 }
 ```
 
@@ -740,13 +740,13 @@ GET /api/ai/weekly-tips/:userId
     "userProfile": {
       "farmerType": "Rice Farming",
       "location": "Kathmandu, Bagmati Province",
-      "farmingScale": "Small Scale"
+      "economicScale": "Small Scale"
     },
     "userDetails": {
       "userId": "507f1f77bcf86cd799439011",
       "name": "John Doe",
       "farmerType": "Rice Farming",
-      "farmingScale": "Small Scale",
+      "economicScale": "Small Scale",
       "municipality": "Kathmandu Metropolitan City"
     },
     "seasonalContext": {

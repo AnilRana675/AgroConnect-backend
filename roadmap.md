@@ -74,7 +74,7 @@ Email and password
 },
 "farmInfo": {
 "farmerType": "Horticulturist",
-"farmingScale": "Semi-Commercial"
+"economicScale": "Semi-Commercial"
 },
 "loginCredentials": {
 "email": "sita.rai@example.com",
@@ -98,7 +98,7 @@ Email and password
 },
 "farmInfo": {
 "farmerType": "enum",
-"farmingScale": "enum"
+"economicScale": "enum"
 },
 "loginCredentials": {
 "email": "string_email",
