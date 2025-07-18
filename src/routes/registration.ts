@@ -1,6 +1,7 @@
 import express from 'express';
 import { User } from '../models/User';
 import { TempRegistration } from '../models/TempRegistration';
+import authUtils from '../utils/auth';
 import logger from '../utils/logger';
 
 const router = express.Router();
@@ -432,6 +433,9 @@ router.post('/complete', async (req, res) => {
     // Delete temporary registration if it exists
     await TempRegistration.deleteOne({ sessionId });
 
+    // Generate JWT token for the new user
+    const token = authUtils.generateToken(newUser);
+
     // Remove password from response
     const userResponse = newUser.toObject();
     delete userResponse.loginCredentials.password;
@@ -442,6 +446,8 @@ router.post('/complete', async (req, res) => {
       message: 'Registration completed successfully',
       step: 6,
       user: userResponse,
+      token,
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
       sessionId,
       registrationComplete: true,
     });

@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import authUtils from '../utils/auth';
 
 export interface IUser extends Document {
   personalInfo: {
@@ -48,5 +49,24 @@ const UserSchema: Schema = new Schema(
     timestamps: true,
   },
 );
+
+// Hash password before saving
+UserSchema.pre('save', async function (next) {
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('loginCredentials.password')) return next();
+
+  try {
+    // Hash password with cost of 12
+    const userDoc = this as unknown as IUser;
+    const currentPassword = userDoc.loginCredentials.password;
+    if (currentPassword) {
+      const hashedPassword = await authUtils.hashPassword(currentPassword);
+      userDoc.loginCredentials.password = hashedPassword;
+    }
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
 
 export const User = mongoose.model<IUser>('User', UserSchema);

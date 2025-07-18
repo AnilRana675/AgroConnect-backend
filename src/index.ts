@@ -1,15 +1,19 @@
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST before any other imports
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import userRoutes from './routes/users';
 import registrationRoutes from './routes/registration';
+import aiAssistantRoutes from './routes/ai-assistant';
+import authRoutes from './routes/auth';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import httpLogger from './middleware/httpLogger';
 import logger from './utils/logger';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,8 +38,10 @@ app.get('/', (_req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/registration', registrationRoutes);
+app.use('/api/ai', aiAssistantRoutes);
 
 // MongoDB connection
 const connectDB = async () => {
