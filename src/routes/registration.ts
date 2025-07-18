@@ -141,12 +141,12 @@ router.post('/step3', async (req, res) => {
       });
     }
 
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
+    // Find existing temp registration or create new one if it doesn't exist
+    let tempRegistration = await TempRegistration.findOne({ sessionId });
     if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 3,
+      tempRegistration = new TempRegistration({
+        sessionId,
+        currentStep: 0,
       });
     }
 
@@ -194,12 +194,12 @@ router.post('/step4', async (req, res) => {
       });
     }
 
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
+    // Find existing temp registration or create new one if it doesn't exist
+    let tempRegistration = await TempRegistration.findOne({ sessionId });
     if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 4,
+      tempRegistration = new TempRegistration({
+        sessionId,
+        currentStep: 0,
       });
     }
 
@@ -256,12 +256,12 @@ router.post('/step5', async (req, res) => {
       });
     }
 
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
+    // Find existing temp registration or create new one if it doesn't exist
+    let tempRegistration = await TempRegistration.findOne({ sessionId });
     if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 5,
+      tempRegistration = new TempRegistration({
+        sessionId,
+        currentStep: 0,
       });
     }
 
@@ -293,14 +293,8 @@ router.post('/step5', async (req, res) => {
 // Step 6: Complete Registration (Save Password and Create User)
 router.post('/complete', async (req, res) => {
   try {
-    const { password, sessionId } = req.body;
-
-    if (!password) {
-      return res.status(400).json({
-        message: 'Password is required',
-        step: 6,
-      });
-    }
+    const { password, sessionId, personalInfo, locationInfo, farmInfo, loginCredentials } =
+      req.body;
 
     if (!sessionId) {
       return res.status(400).json({
@@ -309,51 +303,120 @@ router.post('/complete', async (req, res) => {
       });
     }
 
-    // Find existing temp registration
-    const tempRegistration = await TempRegistration.findOne({ sessionId });
-    if (!tempRegistration) {
-      return res.status(400).json({
-        message: 'Invalid session. Please start registration from step 1',
-        step: 6,
-      });
+    // Handle both direct submission and session-based submission
+    let userData;
+    if (personalInfo || locationInfo || farmInfo || loginCredentials) {
+      // Direct submission with data (even if incomplete)
+      userData = {
+        personalInfo,
+        locationInfo,
+        farmInfo,
+        loginCredentials,
+      };
+    } else {
+      // Session-based submission
+      if (!password) {
+        return res.status(400).json({
+          message: 'Password is required',
+          step: 6,
+        });
+      }
+
+      const tempRegistration = await TempRegistration.findOne({ sessionId });
+      if (!tempRegistration) {
+        return res.status(400).json({
+          message: 'Invalid session. Please start registration from step 1',
+          step: 6,
+        });
+      }
+
+      // Validate all data is complete
+      if (!tempRegistration.personalInfo?.firstName || !tempRegistration.personalInfo?.lastName) {
+        return res.status(400).json({
+          message: 'Personal information is incomplete. Please complete all previous steps.',
+          step: 6,
+        });
+      }
+
+      if (
+        !tempRegistration.locationInfo?.state ||
+        !tempRegistration.locationInfo?.district ||
+        !tempRegistration.locationInfo?.municipality
+      ) {
+        return res.status(400).json({
+          message: 'Location information is incomplete. Please complete all previous steps.',
+          step: 6,
+        });
+      }
+
+      if (!tempRegistration.farmInfo?.farmerType || !tempRegistration.farmInfo?.farmingScale) {
+        return res.status(400).json({
+          message: 'Farm information is incomplete. Please complete all previous steps.',
+          step: 6,
+        });
+      }
+
+      if (!tempRegistration.loginCredentials?.email) {
+        return res.status(400).json({
+          message: 'Email is missing. Please complete all previous steps.',
+          step: 6,
+        });
+      }
+
+      userData = {
+        personalInfo: tempRegistration.personalInfo,
+        locationInfo: tempRegistration.locationInfo,
+        farmInfo: tempRegistration.farmInfo,
+        loginCredentials: {
+          email: tempRegistration.loginCredentials.email,
+          password: password,
+        },
+      };
     }
 
-    // Validate all data is complete
-    if (!tempRegistration.personalInfo?.firstName || !tempRegistration.personalInfo?.lastName) {
+    // Validate required fields - check fields in order of priority
+    if (!userData.personalInfo?.firstName || !userData.personalInfo?.lastName) {
       return res.status(400).json({
-        message: 'Personal information is incomplete. Please complete all previous steps.',
+        message: 'Personal information is incomplete',
         step: 6,
       });
     }
 
     if (
-      !tempRegistration.locationInfo?.state ||
-      !tempRegistration.locationInfo?.district ||
-      !tempRegistration.locationInfo?.municipality
+      !userData.locationInfo?.state ||
+      !userData.locationInfo?.district ||
+      !userData.locationInfo?.municipality
     ) {
       return res.status(400).json({
-        message: 'Location information is incomplete. Please complete all previous steps.',
+        message: 'Location information is incomplete',
         step: 6,
       });
     }
 
-    if (!tempRegistration.farmInfo?.farmerType || !tempRegistration.farmInfo?.farmingScale) {
+    if (!userData.farmInfo?.farmerType || !userData.farmInfo?.farmingScale) {
       return res.status(400).json({
-        message: 'Farm information is incomplete. Please complete all previous steps.',
+        message: 'Farm information is incomplete',
         step: 6,
       });
     }
 
-    if (!tempRegistration.loginCredentials?.email) {
+    if (!userData.loginCredentials?.email) {
       return res.status(400).json({
-        message: 'Email is missing. Please complete all previous steps.',
+        message: 'Email is missing',
         step: 6,
       });
     }
 
-    // Check if user already exists (double check)
+    if (!userData.loginCredentials?.password) {
+      return res.status(400).json({
+        message: 'Password is required',
+        step: 6,
+      });
+    }
+
+    // Check if user already exists
     const existingUser = await User.findOne({
-      'loginCredentials.email': tempRegistration.loginCredentials.email,
+      'loginCredentials.email': userData.loginCredentials.email,
     });
     if (existingUser) {
       return res.status(400).json({
@@ -362,27 +425,18 @@ router.post('/complete', async (req, res) => {
       });
     }
 
-    // Create new user from temp data
-    const newUser = new User({
-      personalInfo: tempRegistration.personalInfo,
-      locationInfo: tempRegistration.locationInfo,
-      farmInfo: tempRegistration.farmInfo,
-      loginCredentials: {
-        email: tempRegistration.loginCredentials.email,
-        password: password,
-      },
-    });
-
+    // Create new user
+    const newUser = new User(userData);
     await newUser.save();
 
-    // Delete temporary registration
+    // Delete temporary registration if it exists
     await TempRegistration.deleteOne({ sessionId });
 
     // Remove password from response
     const userResponse = newUser.toObject();
     delete userResponse.loginCredentials.password;
 
-    logger.info(`Registration completed for user: ${tempRegistration.loginCredentials.email}`);
+    logger.info(`Registration completed for user: ${userData.loginCredentials.email}`);
 
     res.status(201).json({
       message: 'Registration completed successfully',
