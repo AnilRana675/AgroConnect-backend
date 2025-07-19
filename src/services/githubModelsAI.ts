@@ -7,6 +7,7 @@ interface FarmingAdviceRequest {
     farmerType: string;
     location: string;
     economicScale: string;
+    onboardingStatus?: string;
   };
 }
 
@@ -67,7 +68,7 @@ class GitHubModelsAIService {
           ],
           model: 'Llama-3.2-11B-Vision-Instruct',
           temperature: 0.7,
-          max_tokens: 300,
+          max_tokens: 600,
           top_p: 1,
         }),
       });
@@ -100,9 +101,7 @@ class GitHubModelsAIService {
     }
 
     try {
-      const prompt = `Generate weekly farming tips for a ${userProfile.farmerType} farmer 
-                     in ${userProfile.location}, Nepal with ${userProfile.economicScale} operations. 
-                     Focus on current season activities, pest management, and crop care.`;
+      const prompt = `Generate a SHORT summary of weekly farming tips (max 3-4 bullet points) for a ${userProfile.farmerType} farmer in ${userProfile.location}, Nepal with ${userProfile.economicScale} operations. Be concise and practical. Focus on the most important, actionable tips for this week. Avoid long explanations.`;
 
       const response = await fetch(`${this.baseURL}/chat/completions`, {
         method: 'POST',
@@ -115,7 +114,7 @@ class GitHubModelsAIService {
             {
               role: 'system',
               content: `You are an agricultural expert for Nepal. Provide weekly farming tips 
-                       that are practical, season-appropriate, and suitable for local conditions.`,
+                       that are practical, season-appropriate, and suitable for local conditions. Keep your answer very short and concise, using only 2-4 bullet points.`,
             },
             {
               role: 'user',
@@ -211,6 +210,7 @@ class GitHubModelsAIService {
       farmerType: string;
       location: string;
       economicScale: string;
+      onboardingStatus?: string;
     },
   ): string {
     if (!userProfile) {
@@ -219,7 +219,7 @@ class GitHubModelsAIService {
 
     return `${question} 
            Context: I am a ${userProfile.farmerType} farmer in ${userProfile.location}, Nepal 
-           with ${userProfile.economicScale} farming operations.`;
+           with ${userProfile.economicScale} farming operations.${userProfile.onboardingStatus ? ` Onboarding status: ${userProfile.onboardingStatus}.` : ''}`;
   }
 
   /**

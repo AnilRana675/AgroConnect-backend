@@ -75,6 +75,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
             farmerType: user.farmInfo.farmerType,
             location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
             economicScale: user.farmInfo.economicScale,
+            onboardingStatus: user.onboardingStatus,
           };
           userDetails = {
             userId: user._id,
@@ -83,6 +84,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
             province: user.locationInfo.province,
             farmerType: user.farmInfo.farmerType,
             economicScale: user.farmInfo.economicScale,
+            onboardingStatus: user.onboardingStatus,
           };
         }
       } catch (error) {

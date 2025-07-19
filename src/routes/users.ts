@@ -94,4 +94,26 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Add onboarding status update endpoint
+router.post('/:id/onboarding', async (req, res) => {
+  try {
+    const { onboardingStatus } = req.body;
+    if (!onboardingStatus) {
+      return res.status(400).json({ message: 'onboardingStatus is required' });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { onboardingStatus },
+      { new: true },
+    ).select('-loginCredentials.password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ message: 'Onboarding status saved', user });
+  } catch (error) {
+    logger.error('Error saving onboarding status:', error);
+    res.status(500).json({ message: 'Error saving onboarding status', error });
+  }
+});
+
 export default router;

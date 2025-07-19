@@ -12,6 +12,7 @@ type UserProfile = {
   farmerType: string;
   location: string;
   economicScale: string;
+  onboardingStatus?: string;
 };
 
 interface CacheItem<T = unknown> {

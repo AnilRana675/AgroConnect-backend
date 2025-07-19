@@ -18,6 +18,8 @@ import logger from './utils/logger';
 import redisService from './services/redisService';
 
 const app = express();
+// Trust the first proxy (needed for rate limiting and X-Forwarded-For)
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 

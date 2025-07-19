@@ -35,7 +35,7 @@ router.post('/step1', async (req, res) => {
     }
 
     const actualSessionId =
-      sessionId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionId || `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     // Store in temporary database
     const tempRegistration = await findOrCreateTempRegistration(actualSessionId);
@@ -72,7 +72,9 @@ router.post('/step1', async (req, res) => {
 // Step 2: Save Location
 router.post('/step2', async (req, res) => {
   try {
-    const { province, district, municipality, sessionId } = req.body;
+    // Accept sessionId from body or header
+    const sessionId = req.body.sessionId || req.headers['x-session-id'];
+    const { province, district, municipality } = req.body;
 
     if (!province || !district || !municipality) {
       return res.status(400).json({

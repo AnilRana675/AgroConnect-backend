@@ -69,7 +69,7 @@ POST /api/registration/step1
 
 ## Step 2: Location Registration
 
-**Question:** "Which area are you located in? [state, district, municipality]"
+**Question:** "Which area are you located in? [province, district, municipality]"
 
 ### Endpoint
 
@@ -81,7 +81,7 @@ POST /api/registration/step2
 
 ```json
 {
-  "state": "Bagmati Province",
+  "province": "Bagmati Province",
   "district": "Kathmandu",
   "municipality": "Kathmandu Metropolitan City",
   "sessionId": "temp_1640995200000"
@@ -95,7 +95,7 @@ POST /api/registration/step2
   "message": "Location saved successfully",
   "step": 2,
   "data": {
-    "state": "Bagmati Province",
+    "province": "Bagmati Province",
     "district": "Kathmandu",
     "municipality": "Kathmandu Metropolitan City",
     "sessionId": "temp_1640995200000"
@@ -255,7 +255,7 @@ POST /api/registration/complete
       "lastName": "Doe"
     },
     "locationInfo": {
-      "state": "Bagmati Province",
+      "Province": "Bagmati Province",
       "district": "Kathmandu",
       "municipality": "Kathmandu Metropolitan City"
     },
@@ -296,7 +296,7 @@ GET /api/registration/progress/:sessionId
       "lastName": "Doe"
     },
     "locationInfo": {
-      "state": "Bagmati Province",
+      "province": "Bagmati Province",
       "district": "Kathmandu",
       "municipality": "Kathmandu Metropolitan City"
     },
@@ -409,7 +409,7 @@ curl -X POST http://localhost:5000/api/registration/step1 \
 curl -X POST http://localhost:5000/api/registration/step2 \
   -H "Content-Type: application/json" \
   -d '{
-    "state": "Bagmati Province",
+    "province": "Bagmati Province",
     "district": "Kathmandu",
     "municipality": "Kathmandu Metropolitan City",
     "sessionId": "temp_1640995200000"
