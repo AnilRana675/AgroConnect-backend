@@ -11,6 +11,7 @@ import registrationRoutes from './routes/registration';
 import aiAssistantRoutes from './routes/ai-assistant';
 import authRoutes from './routes/auth';
 import cacheRoutes from './routes/cache';
+import plantRoutes from './routes/plant';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import httpLogger from './middleware/httpLogger';
@@ -97,6 +98,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/registration', registrationRoutes);
 app.use('/api/ai', aiAssistantRoutes);
 app.use('/api/cache', cacheRoutes);
+app.use('/api/plant', plantRoutes);
 
 // MongoDB connection
 const connectDB = async () => {
