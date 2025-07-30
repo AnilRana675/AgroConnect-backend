@@ -1,0 +1,10 @@
+{
+  "watch": ["src"],
+  "ext": "ts,json",
+  "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts"],
+  "exec": "ts-node src/index.ts",
+  "nodeArgs": ["--max-old-space-size=256"],
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
