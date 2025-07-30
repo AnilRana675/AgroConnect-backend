@@ -8,6 +8,11 @@ import { cacheMiddleware } from '../middleware/cache';
 
 const router = express.Router();
 
+// Debug route to test if registration routes are working
+router.get('/test', (req, res) => {
+  res.json({ message: 'Registration routes are working', timestamp: new Date() });
+});
+
 // Helper function to find or create temp registration
 async function findOrCreateTempRegistration(sessionId: string) {
   let tempRegistration = await TempRegistration.findOne({ sessionId });
@@ -25,6 +30,7 @@ async function findOrCreateTempRegistration(sessionId: string) {
 // Step 1: Save Name
 router.post('/step1', async (req, res) => {
   try {
+    logger.info('Step1 route hit', { body: req.body, headers: req.headers });
     const { firstName, middleName, lastName, sessionId } = req.body;
 
     if (!firstName || !lastName) {

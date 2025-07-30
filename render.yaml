@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: FRONTEND_URL
+        value: https://agroconnect-frontend-iup3.onrender.com
       - key: PORT
         fromService:
           type: web

@@ -1,4 +1,11 @@
 node_modules/
 .env
+.env.local
 dist/
 logs/
+coverage/
+*.log
+.DS_Store
+.vscode/settings.json
+.env.development
+.env.production
