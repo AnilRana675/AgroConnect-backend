@@ -76,7 +76,7 @@ const corsOptions = {
     'http://localhost:3000', // Local development
     'https://agroconnect-frontend.onrender.com', // Production frontend
     process.env.FRONTEND_URL || '', // Additional frontend URL from env
-  ].filter(url => url !== ''), // Remove empty strings
+  ].filter((url) => url !== ''), // Remove empty strings
   credentials: true,
   optionsSuccessStatus: 200,
 };
