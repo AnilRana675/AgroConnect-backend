@@ -2,11 +2,14 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "node --max-old-space-size=512 --optimize-for-size dist/index.js",
     "build": "tsc",
-    "dev": "nodemon --watch src --exec ts-node src/index.ts",
+    "dev": "nodemon --max-old-space-size=512 --watch src --exec ts-node src/index.ts",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "prepare": "husky install",
@@ -14,7 +17,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "prebuild": "npm run clean",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "postinstall": "npm run build"
   },
   "keywords": [],
   "author": "",
