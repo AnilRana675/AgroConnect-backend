@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: agroconnect-backend
+    env: node
+    plan: free # Change to starter or professional for better performance
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        fromService:
+          type: web
+          name: agroconnect-backend
+          property: port
+    healthCheckPath: /health
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+    disk:
+      name: agroconnect-disk
+      mountPath: /var/data
+      sizeGB: 1

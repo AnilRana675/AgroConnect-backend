@@ -77,13 +77,34 @@ app.use(helmet());
 
 // Limit repeated requests to public APIs and/or endpoints
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX || '100'), // Limit each IP
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: '15 minutes',
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 app.use(limiter);
 
 // Use HTTP request logger
 app.use(httpLogger);
+
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  const healthCheck = {
+    uptime: process.uptime(),
+    message: 'OK',
+    timestamp: Date.now(),
+    memory: {
+      used: Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100,
+      total: Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100,
+      external: Math.round((process.memoryUsage().external / 1024 / 1024) * 100) / 100,
+    },
+  };
+  res.status(200).json(healthCheck);
+});
 
 app.get('/', (req, res) => {
   winstonLogger.info({
@@ -145,10 +166,38 @@ const startServer = async () => {
   await connectDB();
   await connectRedis();
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     winstonLogger.info(`Server running on port ${PORT}`);
+    winstonLogger.info(`Health check available at /health`);
   });
+
+  // Set server timeout for production
+  server.timeout = 30000; // 30 seconds
+
+  return server;
 };
+
+// Memory monitoring for production
+if (process.env.NODE_ENV === 'production') {
+  setInterval(() => {
+    const memUsage = process.memoryUsage();
+    const memUsed = Math.round((memUsage.heapUsed / 1024 / 1024) * 100) / 100;
+    if (memUsed > 400) {
+      // Warning if memory usage exceeds 400MB
+      winstonLogger.warn(`High memory usage: ${memUsed}MB`);
+    }
+  }, 60000); // Check every minute
+
+  // Force garbage collection every 5 minutes if available
+  if (global.gc) {
+    setInterval(() => {
+      if (global.gc) {
+        global.gc();
+        winstonLogger.info('Garbage collection triggered');
+      }
+    }, 300000);
+  }
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
