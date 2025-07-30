@@ -21,6 +21,8 @@
     "test:coverage": "cross-env NODE_ENV=test jest --coverage",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
     "postinstall": "npm run build"
   },
   "keywords": [],
