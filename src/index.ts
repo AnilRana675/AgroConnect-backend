@@ -70,7 +70,18 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-app.use(cors());
+// CORS configuration for production
+const corsOptions = {
+  origin: [
+    'http://localhost:3000', // Local development
+    'https://agroconnect-frontend.onrender.com', // Production frontend
+    process.env.FRONTEND_URL || '', // Additional frontend URL from env
+  ].filter(url => url !== ''), // Remove empty strings
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(helmet());
