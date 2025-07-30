@@ -81,7 +81,7 @@ const limiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_MAX || '100'), // Limit each IP
   message: {
     error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
+    retryAfter: '15 minutes',
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -100,8 +100,8 @@ app.get('/health', (req, res) => {
     memory: {
       used: Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100,
       total: Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100,
-      external: Math.round((process.memoryUsage().external / 1024 / 1024) * 100) / 100
-    }
+      external: Math.round((process.memoryUsage().external / 1024 / 1024) * 100) / 100,
+    },
   };
   res.status(200).json(healthCheck);
 });
@@ -182,7 +182,8 @@ if (process.env.NODE_ENV === 'production') {
   setInterval(() => {
     const memUsage = process.memoryUsage();
     const memUsed = Math.round((memUsage.heapUsed / 1024 / 1024) * 100) / 100;
-    if (memUsed > 400) { // Warning if memory usage exceeds 400MB
+    if (memUsed > 400) {
+      // Warning if memory usage exceeds 400MB
       winstonLogger.warn(`High memory usage: ${memUsed}MB`);
     }
   }, 60000); // Check every minute

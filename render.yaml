@@ -2,7 +2,7 @@ services:
   - type: web
     name: agroconnect-backend
     env: node
-    plan: free  # Change to starter or professional for better performance
+    plan: free # Change to starter or professional for better performance
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:

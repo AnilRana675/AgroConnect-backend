@@ -3,6 +3,7 @@
 ## Render Deployment Instructions
 
 ### 1. Prerequisites
+
 - GitHub repository with your backend code
 - Render account (free tier available)
 - MongoDB Atlas database (free tier available)
@@ -26,11 +27,13 @@ LOG_LEVEL=info
 ### 3. Render Configuration
 
 #### Automatic Deployment (Recommended)
+
 1. Connect your GitHub repository to Render
 2. Use the included `render.yaml` file for automatic configuration
 3. Render will automatically detect and use the configuration
 
 #### Manual Deployment
+
 1. Create a new Web Service on Render
 2. Connect your GitHub repository
 3. Use these settings:
@@ -43,6 +46,7 @@ LOG_LEVEL=info
 ### 4. Memory Optimization Features
 
 ✅ **Implemented optimizations:**
+
 - Node.js heap size limited to 512MB (`--max-old-space-size=512`)
 - Size optimization enabled (`--optimize-for-size`)
 - Garbage collection monitoring in production
@@ -53,6 +57,7 @@ LOG_LEVEL=info
 ### 5. Production Features
 
 ✅ **Security & Performance:**
+
 - Helmet.js for security headers
 - Rate limiting (100 requests per 15 minutes)
 - CORS configuration
@@ -61,6 +66,7 @@ LOG_LEVEL=info
 - Server timeout configuration (30 seconds)
 
 ✅ **Monitoring:**
+
 - Health check endpoint: `GET /health`
 - Memory usage monitoring
 - Request duration tracking
@@ -102,17 +108,20 @@ The enhanced plant identification now includes:
 ### 9. Troubleshooting
 
 #### Memory Issues
+
 - Memory usage is limited to 512MB
 - Garbage collection runs every 5 minutes
 - Health endpoint shows current memory usage
 - Warnings logged when memory exceeds 400MB
 
 #### Build Issues
+
 - Ensure all dependencies are in `package.json`
 - Check that TypeScript compilation succeeds locally
 - Verify environment variables are set correctly
 
 #### API Issues
+
 - Check environment variables (especially GITHUB_TOKEN and PLANT_ID_API_KEY)
 - Verify MongoDB connection string
 - Test endpoints individually
@@ -120,6 +129,7 @@ The enhanced plant identification now includes:
 ### 10. Free Tier Limitations
 
 Render free tier includes:
+
 - 512MB RAM (perfect for our optimization)
 - 0.1 CPU
 - Service spins down after 15 minutes of inactivity
@@ -128,6 +138,7 @@ Render free tier includes:
 ### 11. Monitoring
 
 Monitor your deployment:
+
 - **Logs**: Available in Render dashboard
 - **Health**: `GET /health` endpoint
 - **Memory**: Included in health check response
