@@ -74,11 +74,14 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const corsOptions = {
   origin: [
     'http://localhost:3000', // Local development
-    'https://agroconnect-frontend.onrender.com', // Production frontend
+    'https://agroconnect-frontend.onrender.com', // Production frontend (generic)
+    'https://agroconnect-frontend-iup3.onrender.com', // Your actual deployed frontend
     process.env.FRONTEND_URL || '', // Additional frontend URL from env
   ].filter((url) => url !== ''), // Remove empty strings
   credentials: true,
   optionsSuccessStatus: 200,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
 };
 
 app.use(cors(corsOptions));
