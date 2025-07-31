@@ -1,12 +1,83 @@
 import { Request, Response, NextFunction } from 'express';
 import redisService from '../services/redisService';
 import logger from '../utils/logger';
+import crypto from 'crypto';
 
 interface CacheOptions {
   ttl?: number;
   keyGenerator?: (req: Request) => string;
   condition?: (req: Request) => boolean;
+  vary?: string[]; // Headers to vary cache by
+  skipCache?: (req: Request) => boolean;
 }
+
+// Advanced cache configuration
+interface CacheConfig {
+  ttl: number;
+  keyPrefix: string;
+  vary?: string[];
+  skipCache?: (req: Request) => boolean;
+  generateKey?: (req: Request) => string;
+}
+
+// Default cache configurations for different route patterns
+const cacheConfigs: Record<string, CacheConfig> = {
+  '/api/translation': {
+    ttl: 3600, // 1 hour
+    keyPrefix: 'translation',
+    vary: ['Accept-Language'],
+  },
+  '/api/plant': {
+    ttl: 1800, // 30 minutes
+    keyPrefix: 'plant',
+    skipCache: (req) => req.method !== 'GET',
+  },
+  '/api/auth/me': {
+    ttl: 300, // 5 minutes
+    keyPrefix: 'user_profile',
+    vary: ['Authorization'],
+  },
+  '/api/auth/status': {
+    ttl: 1800, // 30 minutes
+    keyPrefix: 'status',
+  },
+};
+
+/**
+ * Generate smart cache key based on request
+ */
+const generateSmartCacheKey = (req: Request, config: CacheConfig): string => {
+  if (config.generateKey) {
+    return `${config.keyPrefix}:${config.generateKey(req)}`;
+  }
+
+  let keyData = `${req.method}:${req.path}`;
+
+  // Add query parameters
+  if (Object.keys(req.query).length > 0) {
+    const sortedQuery = Object.keys(req.query)
+      .sort()
+      .map((key) => `${key}=${req.query[key]}`)
+      .join('&');
+    keyData += `?${sortedQuery}`;
+  }
+
+  // Add varying headers
+  if (config.vary) {
+    config.vary.forEach((header) => {
+      const value = req.get(header);
+      if (value) keyData += `:${header}:${value}`;
+    });
+  }
+
+  // Add user ID for user-specific caches
+  if (req.user?.userId && config.keyPrefix.includes('user')) {
+    keyData += `:user:${req.user.userId}`;
+  }
+
+  const hash = crypto.createHash('md5').update(keyData).digest('hex');
+  return `${config.keyPrefix}:${hash}`;
+};
 
 /**
  * Cache middleware for GET requests

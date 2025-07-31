@@ -1,10 +1,12 @@
 import express from 'express';
+import crypto from 'crypto';
 import { User } from '../models/User';
 import { TempRegistration } from '../models/TempRegistration';
 import authUtils from '../utils/auth';
 import logger from '../utils/logger';
 import redisService from '../services/redisService';
 import { cacheMiddleware } from '../middleware/cache';
+import emailService from '../services/emailService';
 
 const router = express.Router();
 
@@ -438,7 +440,31 @@ router.post('/complete', async (req, res) => {
 
     // Create new user
     const newUser = new User(userData);
+
+    // Set up email verification
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    newUser.emailVerification = {
+      isVerified: false,
+      verificationToken,
+      verificationTokenExpires: verificationExpires,
+    };
+
     await newUser.save();
+
+    // Send verification email
+    try {
+      await emailService.sendVerificationEmail(
+        userData.loginCredentials.email,
+        userData.personalInfo.firstName,
+        verificationToken,
+      );
+      logger.info(`Verification email sent to: ${userData.loginCredentials.email}`);
+    } catch (emailError) {
+      logger.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email fails, just log it
+    }
 
     // Delete temporary registration if it exists
     await TempRegistration.deleteOne({ sessionId });
@@ -453,13 +479,15 @@ router.post('/complete', async (req, res) => {
     logger.info(`Registration completed for user: ${userData.loginCredentials.email}`);
 
     res.status(201).json({
-      message: 'Registration completed successfully',
+      message:
+        'Registration completed successfully. Please check your email to verify your account.',
       step: 6,
       user: userResponse,
       token,
       expiresIn: process.env.JWT_EXPIRES_IN || '7d',
       sessionId,
       registrationComplete: true,
+      emailVerificationRequired: true,
     });
   } catch (error) {
     logger.error('Error completing registration:', error);

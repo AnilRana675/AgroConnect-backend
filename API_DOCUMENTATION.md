@@ -964,3 +964,313 @@ LOG_LEVEL=info
 - **Voice Input**: Speech-to-text for farmers
 - **Offline Mode**: Cached responses for areas with poor connectivity
 - **Community Features**: Farmer-to-farmer knowledge sharing
+
+---
+
+# Additional API Endpoints
+
+## 🔐 Authentication System
+
+### POST /api/auth/login
+Login user and receive JWT token.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "userpassword"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "_id": "user_id",
+      "personalInfo": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "user@example.com"
+      }
+    },
+    "token": "jwt_token_here",
+    "expiresIn": "7d"
+  },
+  "message": "Login successful"
+}
+```
+
+### POST /api/auth/logout
+Logout user (client-side token removal).
+
+**Headers:** `Authorization: Bearer <token>`
+
+### GET /api/auth/me
+Get current user profile.
+
+**Headers:** `Authorization: Bearer <token>`
+
+---
+
+## 🌱 Plant Identification
+
+### POST /api/plant/identify
+Identify plants from images using Plant.id API.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request Body:**
+```json
+{
+  "images": ["base64_encoded_image_1", "base64_encoded_image_2"],
+  "plant_details": ["leaf", "flower"],
+  "modifiers": ["crop"],
+  "plant_language": "en"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "suggestions": [
+      {
+        "plant_name": "Tomato",
+        "probability": 0.95,
+        "plant_details": {
+          "common_names": ["Tomato"],
+          "scientific_name": "Solanum lycopersicum"
+        }
+      }
+    ]
+  },
+  "message": "Plant identified successfully"
+}
+```
+
+---
+
+## 🌍 Translation Services
+
+### GET /api/translation/languages
+Get available languages for translation.
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "languages": [
+      { "code": "en", "name": "English" },
+      { "code": "ne", "name": "Nepali" },
+      { "code": "hi", "name": "Hindi" }
+    ]
+  }
+}
+```
+
+### POST /api/translation/translate
+Translate text between supported languages.
+
+**Request Body:**
+```json
+{
+  "text": "Hello, how are you?",
+  "from": "en",
+  "to": "ne"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "translatedText": "नमस्ते, तपाईं कस्तो हुनुहुन्छ?",
+    "originalText": "Hello, how are you?",
+    "fromLanguage": "en",
+    "toLanguage": "ne"
+  }
+}
+```
+
+---
+
+## 👤 User Management
+
+### GET /api/users/profile
+Get current user's profile.
+
+**Headers:** `Authorization: Bearer <token>`
+
+### PUT /api/users/profile
+Update user profile information.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request Body:**
+```json
+{
+  "personalInfo": {
+    "firstName": "John",
+    "lastName": "Smith",
+    "phoneNumber": "+1234567890",
+    "location": "Updated Location"
+  },
+  "farmerProfile": {
+    "farmSize": "Medium (5-20 acres)",
+    "primaryCrops": ["Rice", "Wheat"],
+    "farmingExperience": "5-10 years",
+    "challenges": ["Weather", "Pests"]
+  }
+}
+```
+
+---
+
+## 📊 Admin Monitoring Dashboard
+
+### GET /api/monitoring/dashboard
+Get comprehensive system status and analytics.
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "system": {
+      "uptime": 3600,
+      "memory": { "used": 120, "total": 512, "percentage": 23 },
+      "services": { "database": "healthy", "redis": "healthy" }
+    },
+    "analytics": {
+      "summary": {
+        "totalRequests": 1500,
+        "recentErrors": 5,
+        "errorRate": 2.1,
+        "avgResponseTime": 250
+      }
+    },
+    "alerts": { "active": [], "count": 0 }
+  }
+}
+```
+
+### GET /api/monitoring/analytics
+Get detailed request analytics and performance metrics.
+
+### GET /api/monitoring/health
+Perform comprehensive health checks on all services.
+
+### POST /api/monitoring/cache/clear
+Clear application cache (admin only).
+
+---
+
+## 🏥 Health Check
+
+### GET /health
+Server health status (no authentication required).
+
+**Success Response (200):**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-07-31T10:30:00.000Z",
+  "uptime": 3600,
+  "memory": { "used": 120, "total": 512 },
+  "environment": "production",
+  "version": "1.0.0"
+}
+```
+
+---
+
+## 🔧 Cache Management
+
+### GET /api/cache/stats
+Get cache performance statistics.
+
+**Headers:** `Authorization: Bearer <token>`
+
+### DELETE /api/cache/clear
+Clear cache entries with optional pattern matching.
+
+**Headers:** `Authorization: Bearer <token>`
+
+---
+
+## 🚨 Error Handling
+
+All errors follow this standardized format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Error description",
+    "statusCode": 400,
+    "code": "ERROR_CODE",
+    "timestamp": "2025-07-31T10:30:00.000Z",
+    "requestId": "uuid-request-id"
+  }
+}
+```
+
+### Common Error Codes
+- `VALIDATION_ERROR` (400) - Invalid input data
+- `AUTHENTICATION_ERROR` (401) - Missing or invalid token
+- `AUTHORIZATION_ERROR` (403) - Insufficient permissions
+- `NOT_FOUND` (404) - Resource not found
+- `RATE_LIMIT_ERROR` (429) - Too many requests
+- `INTERNAL_SERVER_ERROR` (500) - Server error
+
+---
+
+## 🛡️ Security & Rate Limiting
+
+### Rate Limits
+- **General API**: 100 requests per 15 minutes
+- **AI Endpoints**: 10 requests per minute
+- **Auth Endpoints**: 5 requests per 15 minutes
+
+### Response Headers
+All responses include:
+- `X-Request-ID` - Unique request identifier
+- `X-Response-Time` - Response time in milliseconds
+- `X-Powered-By` - AgroConnect API
+- `X-Cache` - Cache status (HIT/MISS)
+
+Rate-limited endpoints also include:
+- `RateLimit-Limit` - Request limit
+- `RateLimit-Remaining` - Remaining requests
+- `RateLimit-Reset` - Reset timestamp
+
+---
+
+## 🧪 Testing
+
+### Example curl commands:
+
+**Login:**
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password"}'
+```
+
+**Get Profile:**
+```bash
+curl -X GET http://localhost:5000/api/auth/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Health Check:**
+```bash
+curl -X GET http://localhost:5000/health
+```

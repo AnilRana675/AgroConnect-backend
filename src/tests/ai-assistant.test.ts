@@ -197,8 +197,8 @@ describe('AI Assistant API', () => {
       // Create a test user
       const testUser = new User({
         personalInfo: { firstName: 'Test', lastName: 'Farmer' },
-        locationInfo: { state: 'Bagmati Province', district: 'Kathmandu', municipality: 'KMC' },
-        farmInfo: { farmerType: 'Organic Farming', farmingScale: 'Small Scale' },
+        locationInfo: { province: 'Bagmati Province', district: 'Kathmandu', municipality: 'KMC' },
+        farmInfo: { farmerType: 'Organic Farming', economicScale: 'Small Scale' },
         loginCredentials: { email: 'test@example.com', password: 'password123' },
       });
       await testUser.save();
@@ -225,8 +225,8 @@ describe('AI Assistant API', () => {
       // Create a test user
       const testUser = new User({
         personalInfo: { firstName: 'Weekly', lastName: 'Tips' },
-        locationInfo: { state: 'Gandaki Province', district: 'Pokhara', municipality: 'PMC' },
-        farmInfo: { farmerType: 'Rice Farming', farmingScale: 'Medium Scale' },
+        locationInfo: { province: 'Gandaki Province', district: 'Pokhara', municipality: 'PMC' },
+        farmInfo: { farmerType: 'Rice Farming', economicScale: 'Medium Scale' },
         loginCredentials: { email: 'weekly@example.com', password: 'password123' },
       });
       await testUser.save();
