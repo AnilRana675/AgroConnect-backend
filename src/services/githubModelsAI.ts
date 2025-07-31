@@ -1,5 +1,5 @@
 import logger from '../utils/logger';
-import fetch, { Response } from 'node-fetch';
+import fetch, { Response, RequestInit } from 'node-fetch';
 
 interface FarmingAdviceRequest {
   question: string;
@@ -22,7 +22,7 @@ interface ChatResponse {
 class GitHubModelsAIService {
   private apiKey: string | null;
   private baseURL: string;
-  private requestQueue: Array<() => Promise<any>> = [];
+  private requestQueue: Array<() => Promise<unknown>> = [];
   private isProcessingQueue: boolean = false;
   private lastRequestTime: number = 0;
   private requestCount: number = 0;
@@ -77,7 +77,7 @@ class GitHubModelsAIService {
    */
   private async makeAPIRequest(
     url: string,
-    options: any,
+    options: RequestInit,
     maxRetries: number = 3,
   ): Promise<Response> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {

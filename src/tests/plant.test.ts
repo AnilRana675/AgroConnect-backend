@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import httpLogger from '../middleware/httpLogger';
 import plantRoutes from '../routes/plant';
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach as _beforeEach } from '@jest/globals';
 
 // Mock node-fetch before importing anything that uses it
 jest.mock('node-fetch', () => {

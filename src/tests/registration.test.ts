@@ -102,7 +102,7 @@ describe('Registration API', () => {
       });
 
       expect(step1Response.status).toBe(200);
-      const actualSessionId = step1Response.body.data.sessionId;
+      const _actualSessionId = step1Response.body.data.sessionId;
 
       const stepData = {
         state: 'Bagmati Province',

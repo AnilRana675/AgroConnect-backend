@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-const compression = require('compression');
+import compression from 'compression';
 import logger from '../utils/logger';
 
 /**
@@ -84,7 +84,7 @@ export const performanceMiddleware = (req: Request, res: Response, next: NextFun
   const originalJson = res.json;
 
   // Override res.json to capture response time
-  res.json = function (body?: any) {
+  res.json = function (body?: unknown) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
 
@@ -163,7 +163,10 @@ export const requestSizeLimiter = (req: Request, res: Response, next: NextFuncti
 /**
  * Health check optimization
  */
-export const healthCheckCache = new Map<string, { data: any; timestamp: number }>();
+export const healthCheckCache = new Map<
+  string,
+  { data: Record<string, unknown>; timestamp: number }
+>();
 
 export const optimizedHealthCheck = (req: Request, res: Response) => {
   const cacheKey = 'health-status';

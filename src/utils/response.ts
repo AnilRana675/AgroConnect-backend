@@ -1,7 +1,7 @@
 import { Response } from 'express';
 
 // Standard success response interface
-interface SuccessResponse<T = any> {
+interface SuccessResponse<T = unknown> {
   success: true;
   data: T;
   message?: string;
@@ -24,7 +24,7 @@ interface ErrorResponse {
     statusCode: number;
     timestamp: string;
     requestId?: string;
-    details?: any;
+    details?: Record<string, unknown>;
   };
 }
 
@@ -42,7 +42,7 @@ export const sendSuccess = <T>(
     success: true,
     data,
     timestamp: new Date().toISOString(),
-    requestId: (res.req as any).requestId,
+    requestId: (res.req as unknown as { requestId?: string }).requestId,
     ...(message && { message }),
     ...(pagination && { pagination }),
   };
@@ -58,7 +58,7 @@ export const sendError = (
   message: string,
   statusCode: number = 500,
   code?: string,
-  details?: any,
+  details?: Record<string, unknown>,
 ): Response => {
   const response: ErrorResponse = {
     success: false,
@@ -66,7 +66,7 @@ export const sendError = (
       message,
       statusCode,
       timestamp: new Date().toISOString(),
-      requestId: (res.req as any).requestId,
+      requestId: (res.req as unknown as { requestId?: string }).requestId,
       ...(code && { code }),
       ...(details && { details }),
     },
@@ -120,7 +120,7 @@ export const sendNoContent = (res: Response): Response => {
 export const sendValidationError = (
   res: Response,
   message: string = 'Validation failed',
-  details?: any,
+  details?: Record<string, unknown>,
 ): Response => {
   return sendError(res, message, 400, 'VALIDATION_ERROR', details);
 };

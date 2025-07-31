@@ -22,7 +22,7 @@ import { ipKeyGenerator } from 'express-rate-limit';
 import httpLogger from './middleware/httpLogger';
 import winston from 'winston';
 import redisService from './services/redisService';
-import { errorHandler, notFoundHandler, AppError } from './middleware/errorHandler';
+import { errorHandler, notFoundHandler, AppError as _AppError } from './middleware/errorHandler';
 import { requestIdMiddleware } from './middleware/requestId';
 import {
   compressionMiddleware,

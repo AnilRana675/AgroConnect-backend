@@ -43,7 +43,7 @@ router.get(
     try {
       const isReady = redisService.isReady();
       status.services.redis = isReady ? 'connected' : 'disconnected';
-    } catch (error) {
+    } catch (_error) {
       status.services.redis = 'disconnected';
     }
 
@@ -83,7 +83,7 @@ router.get(
       const stats = await redisService.getStats();
       metrics.cache.status = 'connected';
       metrics.cache.hitRate = `${stats.keyCount} keys`;
-    } catch (error) {
+    } catch (_error) {
       metrics.cache.status = 'disconnected';
     }
 
@@ -113,7 +113,7 @@ router.get(
     try {
       if (mongoose.connection.readyState === 1) {
         // Simple connection check instead of admin ping
-        const collections = await mongoose.connection.db?.listCollections().toArray();
+        const _collections = await mongoose.connection.db?.listCollections().toArray();
         health.checks.database = {
           status: 'healthy',
           responseTime: Date.now() - dbStart,
@@ -122,7 +122,7 @@ router.get(
         health.checks.database = { status: 'unhealthy', responseTime: 0 };
         health.status = 'degraded';
       }
-    } catch (error) {
+    } catch (_error) {
       health.checks.database = { status: 'unhealthy', responseTime: Date.now() - dbStart };
       health.status = 'degraded';
     }
@@ -138,7 +138,7 @@ router.get(
       if (!isReady) {
         health.status = 'degraded';
       }
-    } catch (error) {
+    } catch (_error) {
       health.checks.redis = { status: 'unhealthy', responseTime: Date.now() - redisStart };
       health.status = 'degraded';
     }
