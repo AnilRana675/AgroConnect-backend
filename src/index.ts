@@ -77,6 +77,7 @@ const corsOptions = {
     'http://localhost:3000', // Local development
     'https://agroconnect-frontend.onrender.com', // Production frontend (generic)
     'https://agroconnect-frontend-iup3.onrender.com', // Your actual deployed frontend
+    'https://agro-connect-frontend-mu.vercel.app', // Vercel deployment
     process.env.FRONTEND_URL || '', // Additional frontend URL from env
   ].filter((url) => url !== ''), // Remove empty strings
   credentials: true,
