@@ -62,14 +62,15 @@ router.post('/translate', optionalAuth, async (req, res) => {
       toLanguage: toLanguage as 'en' | 'ne',
     });
 
-    logger.info(`Translation completed: ${fromLanguage} -> ${toLanguage}, confidence: ${translationResult.confidence}`);
+    logger.info(
+      `Translation completed: ${fromLanguage} -> ${toLanguage}, confidence: ${translationResult.confidence}`,
+    );
 
     res.json({
       success: true,
       data: translationResult,
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     logger.error('Translation route error:', error);
     res.status(500).json({
@@ -105,7 +106,6 @@ router.post('/detect-language', optionalAuth, async (req, res) => {
       },
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     logger.error('Language detection route error:', error);
     res.status(500).json({
@@ -139,7 +139,7 @@ router.post('/translate-ai-response', optionalAuth, async (req, res) => {
 
     const translationResult = await translationService.translateAIResponse(
       aiResponse,
-      userLanguage as 'en' | 'ne'
+      userLanguage as 'en' | 'ne',
     );
 
     res.json({
@@ -147,7 +147,6 @@ router.post('/translate-ai-response', optionalAuth, async (req, res) => {
       data: translationResult,
       timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     logger.error('AI response translation route error:', error);
     res.status(500).json({

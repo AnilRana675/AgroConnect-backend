@@ -73,10 +73,12 @@ router.post('/ask', optionalAuth, async (req, res) => {
           const translationResult = await translationService.translateText({
             text: question,
             fromLanguage: 'ne',
-            toLanguage: 'en'
+            toLanguage: 'en',
           });
           translatedQuestion = translationResult.translatedText;
-          logger.info(`Question translated from Nepali to English: ${question.substring(0, 30)}... -> ${translatedQuestion.substring(0, 30)}...`);
+          logger.info(
+            `Question translated from Nepali to English: ${question.substring(0, 30)}... -> ${translatedQuestion.substring(0, 30)}...`,
+          );
         }
       } catch (translationError) {
         logger.warn('Failed to translate question, using original:', translationError);
@@ -124,7 +126,10 @@ router.post('/ask', optionalAuth, async (req, res) => {
     }
 
     // Check cache for AI response (use translated question for English processing)
-    const aiResponseKey = redisService.generateAIResponseKey(translatedQuestion, userProfile || undefined);
+    const aiResponseKey = redisService.generateAIResponseKey(
+      translatedQuestion,
+      userProfile || undefined,
+    );
     let answer = await redisService.get<string>(aiResponseKey);
     let cached = false;
 

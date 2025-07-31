@@ -60,12 +60,17 @@ English:`;
 
       // Get translation from AI service
       const aiResponse = await githubModelsAI.generateResponse(prompt);
-      
+
       // Clean up the response (remove quotes, extra whitespace)
       const translatedText = aiResponse.trim().replace(/^["']|["']$/g, '');
 
       // Calculate confidence based on response quality
-      const confidence = this.calculateTranslationConfidence(text, translatedText, fromLanguage, toLanguage);
+      const confidence = this.calculateTranslationConfidence(
+        text,
+        translatedText,
+        fromLanguage,
+        toLanguage,
+      );
 
       return {
         success: true,
@@ -77,10 +82,11 @@ English:`;
         model: 'Llama-3.2-11B-Vision-Instruct',
         timestamp: new Date().toISOString(),
       };
-
     } catch (error) {
       logger.error('Translation service error:', error);
-      throw new Error(`Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -110,7 +116,7 @@ Primary language:`;
 
         const aiResponse = await githubModelsAI.generateResponse(prompt);
         const detectedLang = aiResponse.trim().toLowerCase();
-        
+
         if (detectedLang.includes('nepali')) {
           return 'ne';
         } else if (detectedLang.includes('english')) {
@@ -132,7 +138,7 @@ Primary language:`;
     originalText: string,
     translatedText: string,
     fromLang: string,
-    toLang: string
+    toLang: string,
   ): number {
     // Basic confidence calculation
     let confidence = 0.8; // Base confidence
@@ -169,7 +175,7 @@ Primary language:`;
    */
   async translateAIResponse(
     aiResponse: string,
-    userLanguage: 'en' | 'ne' = 'en'
+    userLanguage: 'en' | 'ne' = 'en',
   ): Promise<{ original: string; translated: string; language: string }> {
     try {
       // AI responses are typically in English, translate to Nepali if needed
@@ -177,29 +183,28 @@ Primary language:`;
         const translationResult = await this.translateText({
           text: aiResponse,
           fromLanguage: 'en',
-          toLanguage: 'ne'
+          toLanguage: 'ne',
         });
 
         return {
           original: aiResponse,
           translated: translationResult.translatedText,
-          language: 'ne'
+          language: 'ne',
         };
       }
 
       return {
         original: aiResponse,
         translated: aiResponse,
-        language: 'en'
+        language: 'en',
       };
-
     } catch (error) {
       logger.error('AI response translation error:', error);
       // Return original response if translation fails
       return {
         original: aiResponse,
         translated: aiResponse,
-        language: 'en'
+        language: 'en',
       };
     }
   }
