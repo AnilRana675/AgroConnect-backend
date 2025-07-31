@@ -1,5 +1,6 @@
 import express from 'express';
 import githubModelsAI from '../services/githubModelsAI';
+import translationService from '../services/translationService';
 import { User, IUser } from '../models/User';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import logger from '../utils/logger';
@@ -39,7 +40,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const { question, userId } = req.body;
+    const { question, userId, userLanguage = 'en' } = req.body;
 
     if (!question) {
       return res.status(400).json({
@@ -50,8 +51,38 @@ router.post('/ask', optionalAuth, async (req, res) => {
       });
     }
 
+    // Validate userLanguage
+    if (!['en', 'ne'].includes(userLanguage)) {
+      return res.status(400).json({
+        success: false,
+        error: 'User language must be either "en" or "ne"',
+        requestId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     let userProfile = null;
     let userDetails = null;
+    let translatedQuestion = question;
+
+    // Translate question to English if it's in Nepali
+    if (userLanguage === 'ne') {
+      try {
+        const detectedLang = await translationService.detectLanguage(question);
+        if (detectedLang === 'ne') {
+          const translationResult = await translationService.translateText({
+            text: question,
+            fromLanguage: 'ne',
+            toLanguage: 'en'
+          });
+          translatedQuestion = translationResult.translatedText;
+          logger.info(`Question translated from Nepali to English: ${question.substring(0, 30)}... -> ${translatedQuestion.substring(0, 30)}...`);
+        }
+      } catch (translationError) {
+        logger.warn('Failed to translate question, using original:', translationError);
+        translatedQuestion = question;
+      }
+    }
 
     // Get user profile from authenticated user or provided userId
     const targetUserId = req.user?.userId || userId;
@@ -92,15 +123,15 @@ router.post('/ask', optionalAuth, async (req, res) => {
       }
     }
 
-    // Check cache for AI response
-    const aiResponseKey = redisService.generateAIResponseKey(question, userProfile || undefined);
+    // Check cache for AI response (use translated question for English processing)
+    const aiResponseKey = redisService.generateAIResponseKey(translatedQuestion, userProfile || undefined);
     let answer = await redisService.get<string>(aiResponseKey);
     let cached = false;
 
     if (!answer) {
-      // Generate new AI response if not in cache
+      // Generate new AI response if not in cache (always in English)
       answer = await githubModelsAI.getFarmingAdvice({
-        question,
+        question: translatedQuestion,
         userProfile: userProfile || undefined,
       });
 
@@ -108,7 +139,28 @@ router.post('/ask', optionalAuth, async (req, res) => {
       await redisService.set(aiResponseKey, answer, redisService.getAIResponseTTL());
     } else {
       cached = true;
-      logger.debug(`AI response cache hit for question: ${question.substring(0, 50)}...`);
+      logger.debug(`AI response cache hit for question: ${translatedQuestion.substring(0, 50)}...`);
+    }
+
+    // Translate AI response if user prefers Nepali
+    let translatedAnswer = answer;
+    let translationMetadata = null;
+
+    if (userLanguage === 'ne') {
+      try {
+        const translationResult = await translationService.translateAIResponse(answer, 'ne');
+        translatedAnswer = translationResult.translated;
+        translationMetadata = {
+          originalLanguage: 'en',
+          translatedLanguage: 'ne',
+          translationApplied: translationResult.language === 'ne',
+          originalResponse: answer,
+        };
+        logger.info(`AI response translated to Nepali for user`);
+      } catch (translationError) {
+        logger.warn('Failed to translate AI response, using English:', translationError);
+        translatedAnswer = answer;
+      }
     }
 
     const responseTime = Date.now() - startTime;
@@ -116,11 +168,15 @@ router.post('/ask', optionalAuth, async (req, res) => {
     res.json({
       success: true,
       data: {
-        answer,
+        answer: translatedAnswer,
         question,
+        originalQuestion: userLanguage === 'ne' ? question : translatedQuestion,
+        translatedQuestion: userLanguage === 'ne' ? translatedQuestion : null,
         personalized: !!userProfile,
         userProfile: userProfile || null,
         userDetails: userDetails || null,
+        userLanguage,
+        translationMetadata,
       },
       metadata: {
         requestId,
@@ -131,13 +187,15 @@ router.post('/ask', optionalAuth, async (req, res) => {
         contextType: userProfile ? 'user_profile' : 'anonymous',
         timestamp: new Date().toISOString(),
         apiVersion: '1.0',
+        translationService: translationService.isAvailable(),
       },
       analytics: {
         questionLength: question.length,
-        answerLength: answer.length,
+        answerLength: translatedAnswer.length,
         processingTime: responseTime,
         cached: cached,
         confidenceScore: 0.85, // This could be enhanced with actual confidence scoring
+        translationApplied: !!translationMetadata,
       },
     });
   } catch (error) {

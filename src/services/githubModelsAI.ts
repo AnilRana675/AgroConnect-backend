@@ -228,6 +228,53 @@ class GitHubModelsAIService {
   isConfigured(): boolean {
     return !!this.apiKey;
   }
+
+  /**
+   * Generic AI response method for translation and other tasks
+   */
+  async generateResponse(prompt: string): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error('AI service is not configured. Please check your GitHub token.');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          model: 'Llama-3.2-11B-Vision-Instruct',
+          temperature: 0.3,
+          max_tokens: 500,
+          top_p: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as ChatResponse;
+      const content = data.choices[0]?.message?.content?.trim() || '';
+
+      if (!content) {
+        throw new Error('Empty response from AI service');
+      }
+
+      return content;
+    } catch (error) {
+      logger.error('Error generating AI response:', error);
+      throw error;
+    }
+  }
 }
 
 export default new GitHubModelsAIService();
