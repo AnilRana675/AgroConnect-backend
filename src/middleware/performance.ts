@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import compression from 'compression';
+import * as compression from 'compression';
 import logger from '../utils/logger';
 
 /**
