@@ -4,7 +4,12 @@ import authUtils from '../utils/auth';
 import { authenticate } from '../middleware/auth';
 import logger from '../utils/logger';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
-import { sendSuccess, sendValidationError, sendAuthError, sendError } from '../utils/response';
+import {
+  sendSuccess,
+  sendValidationError as _sendValidationError,
+  sendAuthError as _sendAuthError,
+  sendError as _sendError,
+} from '../utils/response';
 
 const router = express.Router();
 

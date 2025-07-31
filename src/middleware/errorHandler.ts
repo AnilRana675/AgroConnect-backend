@@ -56,8 +56,8 @@ interface RequestContext {
   userAgent?: string;
   method?: string;
   url?: string;
-  body?: any;
-  query?: any;
+  body?: Record<string, unknown>;
+  query?: Record<string, unknown>;
 }
 
 // Error response interface
@@ -69,7 +69,7 @@ interface ErrorResponse {
     statusCode: number;
     timestamp: string;
     requestId?: string;
-    details?: any;
+    details?: Record<string, unknown>;
   };
 }
 
@@ -80,11 +80,11 @@ export const errorHandler = (
   error: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): void => {
   const requestContext: RequestContext = {
-    requestId: (req as any).requestId,
-    userId: (req as any).user?.id,
+    requestId: (req as Request & { requestId?: string }).requestId,
+    userId: req.user?.userId,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
     method: req.method,
@@ -97,7 +97,7 @@ export const errorHandler = (
   let statusCode = 500;
   let message = 'Internal Server Error';
   let code = ErrorCodes.INTERNAL_SERVER_ERROR;
-  let details: any = undefined;
+  let details: Record<string, unknown> | undefined = undefined;
 
   // Handle different error types
   if (error instanceof AppError) {
@@ -108,7 +108,7 @@ export const errorHandler = (
     statusCode = 400;
     message = 'Validation Error';
     code = ErrorCodes.VALIDATION_ERROR;
-    details = (error as any).errors;
+    details = (error as Error & { errors?: Record<string, unknown> }).errors;
   } else if (error.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';
@@ -119,11 +119,15 @@ export const errorHandler = (
     code = ErrorCodes.DATABASE_ERROR;
 
     // Handle duplicate key error
-    if ((error as any).code === 11000) {
+    if ((error as Error & { code?: number }).code === 11000) {
       statusCode = 409;
       message = 'Duplicate resource';
       code = ErrorCodes.DUPLICATE_RESOURCE;
-      details = { duplicateField: Object.keys((error as any).keyValue || {})[0] };
+      details = {
+        duplicateField: Object.keys(
+          (error as Error & { keyValue?: Record<string, unknown> }).keyValue || {},
+        )[0],
+      };
     }
   } else if (error.name === 'JsonWebTokenError') {
     statusCode = 401;
@@ -172,7 +176,9 @@ export const errorHandler = (
 /**
  * Async error wrapper for route handlers
  */
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown> | unknown,
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
@@ -189,9 +195,12 @@ export const notFoundHandler = (req: Request, res: Response, next: NextFunction)
 /**
  * Validation error helper
  */
-export const createValidationError = (message: string, details?: any): AppError => {
+export const createValidationError = (
+  message: string,
+  details?: Record<string, unknown>,
+): AppError => {
   const error = new AppError(message, 400, ErrorCodes.VALIDATION_ERROR);
-  (error as any).details = details;
+  (error as AppError & { details?: Record<string, unknown> }).details = details;
   return error;
 };
 
@@ -216,7 +225,7 @@ export const createAuthorizationError = (
  */
 export const createExternalAPIError = (message: string, service?: string): AppError => {
   const error = new AppError(`External API Error: ${message}`, 502, ErrorCodes.EXTERNAL_API_ERROR);
-  (error as any).service = service;
+  (error as AppError & { service?: string }).service = service;
   return error;
 };
 

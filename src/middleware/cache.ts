@@ -21,7 +21,7 @@ interface CacheConfig {
 }
 
 // Default cache configurations for different route patterns
-const cacheConfigs: Record<string, CacheConfig> = {
+const _cacheConfigs: Record<string, CacheConfig> = {
   '/api/translation': {
     ttl: 3600, // 1 hour
     keyPrefix: 'translation',
@@ -46,7 +46,7 @@ const cacheConfigs: Record<string, CacheConfig> = {
 /**
  * Generate smart cache key based on request
  */
-const generateSmartCacheKey = (req: Request, config: CacheConfig): string => {
+const _generateSmartCacheKey = (req: Request, config: CacheConfig): string => {
   if (config.generateKey) {
     return `${config.keyPrefix}:${config.generateKey(req)}`;
   }

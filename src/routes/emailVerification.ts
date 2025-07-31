@@ -1,7 +1,7 @@
 import express from 'express';
 import { User } from '../models/User';
 import emailService from '../services/emailService';
-import authUtils from '../utils/auth';
+import _authUtils from '../utils/auth';
 import logger from '../utils/logger';
 import crypto from 'crypto';
 

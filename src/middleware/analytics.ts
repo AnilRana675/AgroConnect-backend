@@ -35,7 +35,7 @@ export const analyticsMiddleware = (req: Request, res: Response, next: NextFunct
   // Store original json method
   const originalJson = res.json;
 
-  res.json = function (body: any) {
+  res.json = function (body: unknown) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
 
@@ -60,7 +60,9 @@ export const analyticsMiddleware = (req: Request, res: Response, next: NextFunct
       userAgent: req.get('User-Agent'),
       ip: req.ip || req.connection.remoteAddress || 'unknown',
       userId: req.user?.userId,
-      ...(res.statusCode >= 400 && { error: body?.error?.message || 'Unknown error' }),
+      ...(res.statusCode >= 400 && {
+        error: (body as { error?: { message?: string } })?.error?.message || 'Unknown error',
+      }),
     };
 
     // Store in memory (circular buffer)
@@ -99,7 +101,7 @@ const storeAnalyticsAsync = async (entry: RequestAnalytics): Promise<void> => {
 
     // Store as list entry with TTL of 7 days
     await redisService.set(`${key}:${Date.now()}`, value, 7 * 24 * 60 * 60);
-  } catch (error) {
+  } catch (_error) {
     // Silently fail - analytics shouldn't break the app
   }
 };

@@ -3,11 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 
 // Extend Request interface to include requestId
-declare global {
-  namespace Express {
-    interface Request {
-      requestId: string;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    requestId: string;
   }
 }
 
