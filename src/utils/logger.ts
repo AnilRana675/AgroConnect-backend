@@ -51,7 +51,7 @@ const fileFormat = winston.format.combine(
   winston.format.errors({ stack: true }),
   winston.format.json(),
   winston.format.printf(({ level, message, timestamp, requestId, userId, ...meta }) => {
-    const logEntry: any = {
+    const logEntry: Record<string, unknown> = {
       timestamp,
       level,
       message,
@@ -90,11 +90,15 @@ const logger = winston.createLogger({
 });
 
 // Helper methods for structured logging
-export const logWithContext = (level: string, message: string, context: any = {}) => {
+export const logWithContext = (
+  level: string,
+  message: string,
+  context: Record<string, unknown> = {},
+) => {
   logger.log(level, message, context);
 };
 
-export const logError = (message: string, error: Error, context: any = {}) => {
+export const logError = (message: string, error: Error, context: Record<string, unknown> = {}) => {
   logger.error(message, {
     error: {
       message: error.message,
@@ -105,7 +109,11 @@ export const logError = (message: string, error: Error, context: any = {}) => {
   });
 };
 
-export const logPerformance = (message: string, duration: number, context: any = {}) => {
+export const logPerformance = (
+  message: string,
+  duration: number,
+  context: Record<string, unknown> = {},
+) => {
   logger.info(message, {
     performance: {
       duration: `${duration}ms`,
@@ -115,14 +123,18 @@ export const logPerformance = (message: string, duration: number, context: any =
   });
 };
 
-export const logSecurity = (message: string, context: any = {}) => {
+export const logSecurity = (message: string, context: Record<string, unknown> = {}) => {
   logger.warn(message, {
     security: true,
     ...context,
   });
 };
 
-export const logUserActivity = (action: string, userId: string, context: any = {}) => {
+export const logUserActivity = (
+  action: string,
+  userId: string,
+  context: Record<string, unknown> = {},
+) => {
   logger.info(`User activity: ${action}`, {
     userId,
     userActivity: true,
@@ -136,7 +148,7 @@ export const logAPICall = (
   url: string,
   statusCode: number,
   responseTime: number,
-  context: any = {},
+  context: Record<string, unknown> = {},
 ) => {
   logger.http('API call', {
     api: {

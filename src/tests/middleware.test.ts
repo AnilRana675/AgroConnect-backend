@@ -37,7 +37,7 @@ const createTestApp = () => {
   });
 
   app.get('/test/cast-error', (req, res, next) => {
-    const error = new Error('Cast failed') as any;
+    const error = new Error('Cast failed') as Error & { name: string; path: string; value: string };
     error.name = 'CastError';
     error.path = 'userId';
     error.value = 'invalid-id';

@@ -51,7 +51,7 @@ describe('Email Verification API', () => {
       await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test', {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-      } as any);
+      } as mongoose.ConnectOptions);
     }
   });
 
