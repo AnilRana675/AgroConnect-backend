@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as compression from 'compression';
+const compression = require('compression');
 import logger from '../utils/logger';
 
 /**
