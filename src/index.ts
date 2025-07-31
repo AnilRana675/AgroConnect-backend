@@ -92,7 +92,7 @@ const corsOptions = {
       ? [
           'https://agroconnect-frontend.onrender.com',
           'https://agroconnect-frontend-iup3.onrender.com',
-          'https://agro-connect-frontend-mu.vercel.app',
+          'https://agro-connect-app.vercel.app',
           process.env.FRONTEND_URL || '',
         ].filter((url) => url !== '') // Remove empty values
       : [
