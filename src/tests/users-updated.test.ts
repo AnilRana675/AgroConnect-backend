@@ -133,7 +133,9 @@ describe('User Routes', () => {
       expect(response.body.loginCredentials.password).toBeUndefined();
 
       // Verify user is in database
-      const userInDb = await User.findOne({ 'loginCredentials.email': userData.loginCredentials.email });
+      const userInDb = await User.findOne({
+        'loginCredentials.email': userData.loginCredentials.email,
+      });
       expect(userInDb).toBeTruthy();
       expect(userInDb?.personalInfo.firstName).toBe(userData.personalInfo.firstName);
     });

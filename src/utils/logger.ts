@@ -26,19 +26,22 @@ const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'HH:mm:ss' }),
   winston.format.printf(({ level, message, timestamp, requestId, userId, ...meta }) => {
     let log = `${timestamp} [${level}]: ${message}`;
-    
+
     if (requestId) log += ` (reqId: ${requestId})`;
     if (userId) log += ` (userId: ${userId})`;
-    
+
     // Add metadata if present
     const metaKeys = Object.keys(meta);
     if (metaKeys.length > 0) {
       const metaStr = metaKeys
-        .map(key => `${key}: ${typeof meta[key] === 'object' ? JSON.stringify(meta[key]) : meta[key]}`)
+        .map(
+          (key) =>
+            `${key}: ${typeof meta[key] === 'object' ? JSON.stringify(meta[key]) : meta[key]}`,
+        )
         .join(', ');
       log += ` [${metaStr}]`;
     }
-    
+
     return log;
   }),
 );
@@ -57,12 +60,12 @@ const fileFormat = winston.format.combine(
       environment: process.env.NODE_ENV || 'development',
       ...meta,
     };
-    
+
     if (requestId) logEntry.requestId = requestId;
     if (userId) logEntry.userId = userId;
-    
+
     return JSON.stringify(logEntry);
-  })
+  }),
 );
 
 const transports = [
@@ -129,11 +132,11 @@ export const logUserActivity = (action: string, userId: string, context: any = {
 };
 
 export const logAPICall = (
-  method: string, 
-  url: string, 
-  statusCode: number, 
-  responseTime: number, 
-  context: any = {}
+  method: string,
+  url: string,
+  statusCode: number,
+  responseTime: number,
+  context: any = {},
 ) => {
   logger.http('API call', {
     api: {

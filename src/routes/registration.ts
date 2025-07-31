@@ -440,17 +440,17 @@ router.post('/complete', async (req, res) => {
 
     // Create new user
     const newUser = new User(userData);
-    
+
     // Set up email verification
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
+
     newUser.emailVerification = {
       isVerified: false,
       verificationToken,
       verificationTokenExpires: verificationExpires,
     };
-    
+
     await newUser.save();
 
     // Send verification email
@@ -458,7 +458,7 @@ router.post('/complete', async (req, res) => {
       await emailService.sendVerificationEmail(
         userData.loginCredentials.email,
         userData.personalInfo.firstName,
-        verificationToken
+        verificationToken,
       );
       logger.info(`Verification email sent to: ${userData.loginCredentials.email}`);
     } catch (emailError) {
@@ -479,7 +479,8 @@ router.post('/complete', async (req, res) => {
     logger.info(`Registration completed for user: ${userData.loginCredentials.email}`);
 
     res.status(201).json({
-      message: 'Registration completed successfully. Please check your email to verify your account.',
+      message:
+        'Registration completed successfully. Please check your email to verify your account.',
       step: 6,
       user: userResponse,
       token,

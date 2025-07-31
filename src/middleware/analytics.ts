@@ -34,11 +34,11 @@ export const analyticsMiddleware = (req: Request, res: Response, next: NextFunct
 
   // Store original json method
   const originalJson = res.json;
-  
-  res.json = function(body: any) {
+
+  res.json = function (body: any) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    
+
     // Track response times for average calculation
     responseTimes.push(responseTime);
     if (responseTimes.length > 1000) {
@@ -79,7 +79,7 @@ export const analyticsMiddleware = (req: Request, res: Response, next: NextFunct
     }
 
     // Store analytics in Redis for persistence (async, don't block response)
-    storeAnalyticsAsync(analyticsEntry).catch(error => {
+    storeAnalyticsAsync(analyticsEntry).catch((error) => {
       logger.error('Failed to store analytics in Redis', { error: error.message });
     });
 
@@ -96,7 +96,7 @@ const storeAnalyticsAsync = async (entry: RequestAnalytics): Promise<void> => {
   try {
     const key = `analytics:${new Date().toISOString().split('T')[0]}`; // Daily key
     const value = JSON.stringify(entry);
-    
+
     // Store as list entry with TTL of 7 days
     await redisService.set(`${key}:${Date.now()}`, value, 7 * 24 * 60 * 60);
   } catch (error) {
@@ -110,34 +110,43 @@ const storeAnalyticsAsync = async (entry: RequestAnalytics): Promise<void> => {
 export const getAnalyticsSummary = () => {
   const now = Date.now();
   const windowStart = now - analyticsWindow;
-  
+
   // Filter recent requests
-  const recentRequests = analytics.filter(entry => entry.timestamp >= windowStart);
-  const recentErrors = recentRequests.filter(entry => entry.statusCode && entry.statusCode >= 400);
-  
+  const recentRequests = analytics.filter((entry) => entry.timestamp >= windowStart);
+  const recentErrors = recentRequests.filter(
+    (entry) => entry.statusCode && entry.statusCode >= 400,
+  );
+
   // Calculate averages
-  const avgResponseTime = responseTimes.length > 0 
-    ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
-    : 0;
+  const avgResponseTime =
+    responseTimes.length > 0
+      ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+      : 0;
 
   // Top endpoints
-  const endpointCounts = recentRequests.reduce((acc, req) => {
-    const endpoint = `${req.method} ${req.url.split('?')[0]}`;
-    acc[endpoint] = (acc[endpoint] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const endpointCounts = recentRequests.reduce(
+    (acc, req) => {
+      const endpoint = `${req.method} ${req.url.split('?')[0]}`;
+      acc[endpoint] = (acc[endpoint] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const topEndpoints = Object.entries(endpointCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
     .map(([endpoint, count]) => ({ endpoint, count }));
 
   // Error distribution
-  const errorTypes = recentErrors.reduce((acc, req) => {
-    const status = req.statusCode?.toString() || 'unknown';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const errorTypes = recentErrors.reduce(
+    (acc, req) => {
+      const status = req.statusCode?.toString() || 'unknown';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Response time percentiles
   const sortedTimes = [...responseTimes].sort((a, b) => a - b);
@@ -151,9 +160,10 @@ export const getAnalyticsSummary = () => {
       totalErrors: errorCounter,
       recentRequests: recentRequests.length,
       recentErrors: recentErrors.length,
-      errorRate: recentRequests.length > 0 
-        ? Math.round((recentErrors.length / recentRequests.length) * 100 * 100) / 100
-        : 0,
+      errorRate:
+        recentRequests.length > 0
+          ? Math.round((recentErrors.length / recentRequests.length) * 100 * 100) / 100
+          : 0,
       avgResponseTime,
     },
     performance: {
@@ -180,12 +190,10 @@ export const getAnalyticsSummary = () => {
  * Get detailed analytics for specific time range
  */
 export const getDetailedAnalytics = (startTime?: number, endTime?: number) => {
-  const start = startTime || (Date.now() - analyticsWindow);
+  const start = startTime || Date.now() - analyticsWindow;
   const end = endTime || Date.now();
-  
-  const filtered = analytics.filter(entry => 
-    entry.timestamp >= start && entry.timestamp <= end
-  );
+
+  const filtered = analytics.filter((entry) => entry.timestamp >= start && entry.timestamp <= end);
 
   return {
     entries: filtered,

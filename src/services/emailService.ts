@@ -41,7 +41,7 @@ class EmailService {
         this.transporter = nodemailer.createTransport({
           streamTransport: true,
           newline: 'unix',
-          buffer: true
+          buffer: true,
         });
         return true;
       }
@@ -57,8 +57,8 @@ class EmailService {
         secure: true, // Use SSL
         port: 465,
         tls: {
-          rejectUnauthorized: false
-        }
+          rejectUnauthorized: false,
+        },
       };
 
       this.transporter = nodemailer.createTransport(emailConfig);
@@ -156,7 +156,11 @@ class EmailService {
     `;
   }
 
-  async sendVerificationEmail(email: string, firstName: string, verificationToken: string): Promise<boolean> {
+  async sendVerificationEmail(
+    email: string,
+    firstName: string,
+    verificationToken: string,
+  ): Promise<boolean> {
     if (!this.isConfigured) {
       logger.warn('Email service not configured. Skipping verification email.');
       return false;
@@ -164,12 +168,12 @@ class EmailService {
 
     try {
       const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
-      
+
       const emailOptions: EmailOptions = {
         to: email,
         subject: 'Verify Your Email - AgroConnect',
         html: this.generateVerificationEmailHTML({ firstName, verificationUrl }),
-        text: `Hello ${firstName}! Please verify your email by visiting: ${verificationUrl}`
+        text: `Hello ${firstName}! Please verify your email by visiting: ${verificationUrl}`,
       };
 
       if (process.env.EMAIL_PASSWORD === 'abcd efgh ijkl mnop') {
@@ -180,9 +184,9 @@ class EmailService {
 
       await this.transporter.sendMail({
         from: `"AgroConnect" <${process.env.EMAIL_USER}>`,
-        ...emailOptions
+        ...emailOptions,
       });
-      
+
       logger.info(`Verification email sent successfully to: ${email}`);
       return true;
     } catch (error) {
@@ -191,7 +195,11 @@ class EmailService {
     }
   }
 
-  async sendPasswordResetEmail(email: string, firstName: string, resetToken: string): Promise<boolean> {
+  async sendPasswordResetEmail(
+    email: string,
+    firstName: string,
+    resetToken: string,
+  ): Promise<boolean> {
     if (!this.isConfigured) {
       logger.warn('Email service not configured. Skipping password reset email.');
       return false;
@@ -199,12 +207,12 @@ class EmailService {
 
     try {
       const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-      
+
       const emailOptions: EmailOptions = {
         to: email,
         subject: 'Reset Your Password - AgroConnect',
         html: this.generatePasswordResetEmailHTML({ firstName, resetUrl }),
-        text: `Hello ${firstName}! Reset your password by visiting: ${resetUrl}`
+        text: `Hello ${firstName}! Reset your password by visiting: ${resetUrl}`,
       };
 
       if (process.env.EMAIL_PASSWORD === 'abcd efgh ijkl mnop') {
@@ -215,9 +223,9 @@ class EmailService {
 
       await this.transporter.sendMail({
         from: `"AgroConnect" <${process.env.EMAIL_USER}>`,
-        ...emailOptions
+        ...emailOptions,
       });
-      
+
       logger.info(`Password reset email sent successfully to: ${email}`);
       return true;
     } catch (error) {
@@ -244,9 +252,9 @@ class EmailService {
         to: options.to,
         subject: options.subject,
         html: options.html,
-        text: options.text
+        text: options.text,
       });
-      
+
       logger.info(`Email sent successfully to: ${options.to}`);
       return true;
     } catch (error) {

@@ -11,75 +11,98 @@ const router = express.Router();
 /**
  * POST /api/auth/login - User login
  */
-router.post('/login', asyncHandler(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+router.post(
+  '/login',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email, password } = req.body;
 
-  // Validate input
-  if (!email || !password) {
-    throw new AppError('Email and password are required', 400, 'VALIDATION_ERROR');
-  }
+    // Validate input
+    if (!email || !password) {
+      throw new AppError('Email and password are required', 400, 'VALIDATION_ERROR');
+    }
 
-  // Find user by email
-  const user = await User.findOne({ 'loginCredentials.email': email.toLowerCase() });
-  if (!user) {
-    throw new AppError('Email or password is incorrect', 401, 'INVALID_CREDENTIALS');
-  }
+    // Find user by email
+    const user = await User.findOne({ 'loginCredentials.email': email.toLowerCase() });
+    if (!user) {
+      throw new AppError('Email or password is incorrect', 401, 'INVALID_CREDENTIALS');
+    }
 
-  // Check if user has a password (in case of incomplete registration)
-  if (!user.loginCredentials.password) {
-    throw new AppError('Please complete your registration process', 400, 'INCOMPLETE_REGISTRATION');
-  }
+    // Check if user has a password (in case of incomplete registration)
+    if (!user.loginCredentials.password) {
+      throw new AppError(
+        'Please complete your registration process',
+        400,
+        'INCOMPLETE_REGISTRATION',
+      );
+    }
 
-  // Verify password
-  const isPasswordValid = await authUtils.comparePassword(
-    password,
-    user.loginCredentials.password,
-  );
-  if (!isPasswordValid) {
-    throw new AppError('Email or password is incorrect', 401, 'INVALID_CREDENTIALS');
-  }
+    // Verify password
+    const isPasswordValid = await authUtils.comparePassword(
+      password,
+      user.loginCredentials.password,
+    );
+    if (!isPasswordValid) {
+      throw new AppError('Email or password is incorrect', 401, 'INVALID_CREDENTIALS');
+    }
 
-  // Generate JWT token (user is guaranteed to exist here due to previous checks)
-  const token = authUtils.generateToken(user!);
+    // Generate JWT token (user is guaranteed to exist here due to previous checks)
+    const token = authUtils.generateToken(user!);
 
-  // Remove password from response
-  const userResponse = user!.toObject();
-  delete userResponse.loginCredentials.password;
+    // Remove password from response
+    const userResponse = user!.toObject();
+    delete userResponse.loginCredentials.password;
 
-  logger.info(`User logged in successfully: ${email}`, { requestId: req.requestId });
+    logger.info(`User logged in successfully: ${email}`, { requestId: req.requestId });
 
-  return sendSuccess(res, {
-    user: userResponse,
-    token,
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  }, 'Login successful');
-}));
+    return sendSuccess(
+      res,
+      {
+        user: userResponse,
+        token,
+        expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+      },
+      'Login successful',
+    );
+  }),
+);
 
 /**
  * POST /api/auth/logout - User logout (client-side token removal)
  */
-router.post('/logout', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  // In a JWT-based system, logout is typically handled client-side
-  // by removing the token from storage
-  logger.info(`User logged out: ${req.user?.email}`, { requestId: req.requestId });
+router.post(
+  '/logout',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    // In a JWT-based system, logout is typically handled client-side
+    // by removing the token from storage
+    logger.info(`User logged out: ${req.user?.email}`, { requestId: req.requestId });
 
-  return sendSuccess(res, {
-    instruction: 'Remove the authentication token from your client storage',
-  }, 'Logout successful');
-}));
+    return sendSuccess(
+      res,
+      {
+        instruction: 'Remove the authentication token from your client storage',
+      },
+      'Logout successful',
+    );
+  }),
+);
 
 /**
  * GET /api/auth/me - Get current user profile
  */
-router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
-  const user = await User.findById(req.user?.userId).select('-loginCredentials.password');
+router.get(
+  '/me',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = await User.findById(req.user?.userId).select('-loginCredentials.password');
 
-  if (!user) {
-    throw new AppError('Your account may have been deleted', 404, 'USER_NOT_FOUND');
-  }
+    if (!user) {
+      throw new AppError('Your account may have been deleted', 404, 'USER_NOT_FOUND');
+    }
 
-  return sendSuccess(res, { user }, 'User profile retrieved successfully');
-}));
+    return sendSuccess(res, { user }, 'User profile retrieved successfully');
+  }),
+);
 
 /**
  * PUT /api/auth/change-password - Change user password

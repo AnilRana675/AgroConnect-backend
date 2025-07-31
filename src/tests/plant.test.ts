@@ -9,23 +9,26 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
 // Mock node-fetch before importing anything that uses it
 jest.mock('node-fetch', () => {
-  return jest.fn().mockImplementation(() => Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve({
-      suggestions: [
-        {
-          id: 123,
-          plant_name: 'Test Plant',
-          plant_details: {
-            common_names: ['Test Plant'],
-            scientific_name: 'Testus plantus'
-          },
-          probability: 0.95
-        }
-      ]
-    })
-  }));
+  return jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          suggestions: [
+            {
+              id: 123,
+              plant_name: 'Test Plant',
+              plant_details: {
+                common_names: ['Test Plant'],
+                scientific_name: 'Testus plantus',
+              },
+              probability: 0.95,
+            },
+          ],
+        }),
+    }),
+  );
 });
 
 // Create test app

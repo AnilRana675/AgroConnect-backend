@@ -28,7 +28,7 @@ const cacheConfigs: Record<string, CacheConfig> = {
     vary: ['Accept-Language'],
   },
   '/api/plant': {
-    ttl: 1800, // 30 minutes  
+    ttl: 1800, // 30 minutes
     keyPrefix: 'plant',
     skipCache: (req) => req.method !== 'GET',
   },
@@ -52,29 +52,29 @@ const generateSmartCacheKey = (req: Request, config: CacheConfig): string => {
   }
 
   let keyData = `${req.method}:${req.path}`;
-  
+
   // Add query parameters
   if (Object.keys(req.query).length > 0) {
     const sortedQuery = Object.keys(req.query)
       .sort()
-      .map(key => `${key}=${req.query[key]}`)
+      .map((key) => `${key}=${req.query[key]}`)
       .join('&');
     keyData += `?${sortedQuery}`;
   }
-  
+
   // Add varying headers
   if (config.vary) {
-    config.vary.forEach(header => {
+    config.vary.forEach((header) => {
       const value = req.get(header);
       if (value) keyData += `:${header}:${value}`;
     });
   }
-  
+
   // Add user ID for user-specific caches
   if (req.user?.userId && config.keyPrefix.includes('user')) {
     keyData += `:user:${req.user.userId}`;
   }
-  
+
   const hash = crypto.createHash('md5').update(keyData).digest('hex');
   return `${config.keyPrefix}:${hash}`;
 };

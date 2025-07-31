@@ -36,7 +36,7 @@ export const sendSuccess = <T>(
   data: T,
   message?: string,
   statusCode: number = 200,
-  pagination?: SuccessResponse['pagination']
+  pagination?: SuccessResponse['pagination'],
 ): Response => {
   const response: SuccessResponse<T> = {
     success: true,
@@ -58,7 +58,7 @@ export const sendError = (
   message: string,
   statusCode: number = 500,
   code?: string,
-  details?: any
+  details?: any,
 ): Response => {
   const response: ErrorResponse = {
     success: false,
@@ -86,20 +86,14 @@ export const sendPaginatedSuccess = <T>(
     limit: number;
     total: number;
   },
-  message?: string
+  message?: string,
 ): Response => {
   const totalPages = Math.ceil(pagination.total / pagination.limit);
-  
-  return sendSuccess(
-    res,
-    data,
-    message,
-    200,
-    {
-      ...pagination,
-      totalPages,
-    }
-  );
+
+  return sendSuccess(res, data, message, 200, {
+    ...pagination,
+    totalPages,
+  });
 };
 
 /**
@@ -108,7 +102,7 @@ export const sendPaginatedSuccess = <T>(
 export const sendCreated = <T>(
   res: Response,
   data: T,
-  message: string = 'Resource created successfully'
+  message: string = 'Resource created successfully',
 ): Response => {
   return sendSuccess(res, data, message, 201);
 };
@@ -126,7 +120,7 @@ export const sendNoContent = (res: Response): Response => {
 export const sendValidationError = (
   res: Response,
   message: string = 'Validation failed',
-  details?: any
+  details?: any,
 ): Response => {
   return sendError(res, message, 400, 'VALIDATION_ERROR', details);
 };
@@ -136,7 +130,7 @@ export const sendValidationError = (
  */
 export const sendAuthError = (
   res: Response,
-  message: string = 'Authentication required'
+  message: string = 'Authentication required',
 ): Response => {
   return sendError(res, message, 401, 'AUTHENTICATION_ERROR');
 };
@@ -146,7 +140,7 @@ export const sendAuthError = (
  */
 export const sendAuthorizationError = (
   res: Response,
-  message: string = 'Insufficient permissions'
+  message: string = 'Insufficient permissions',
 ): Response => {
   return sendError(res, message, 403, 'AUTHORIZATION_ERROR');
 };
@@ -154,10 +148,7 @@ export const sendAuthorizationError = (
 /**
  * Send not found error response
  */
-export const sendNotFound = (
-  res: Response,
-  message: string = 'Resource not found'
-): Response => {
+export const sendNotFound = (res: Response, message: string = 'Resource not found'): Response => {
   return sendError(res, message, 404, 'NOT_FOUND');
 };
 
@@ -166,7 +157,7 @@ export const sendNotFound = (
  */
 export const sendRateLimitError = (
   res: Response,
-  message: string = 'Rate limit exceeded'
+  message: string = 'Rate limit exceeded',
 ): Response => {
   return sendError(res, message, 429, 'RATE_LIMIT_ERROR');
 };
@@ -176,7 +167,7 @@ export const sendRateLimitError = (
  */
 export const sendInternalError = (
   res: Response,
-  message: string = 'Internal server error'
+  message: string = 'Internal server error',
 ): Response => {
   return sendError(res, message, 500, 'INTERNAL_SERVER_ERROR');
 };

@@ -37,18 +37,15 @@ const errorLogger = winston.createLogger({
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.json()
+    winston.format.json(),
   ),
   transports: [
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
     new winston.transports.File({ filename: 'logs/combined.log' }),
     new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      )
-    })
-  ]
+      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+    }),
+  ],
 });
 
 // Request context interface
@@ -83,7 +80,7 @@ export const errorHandler = (
   error: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   const requestContext: RequestContext = {
     requestId: (req as any).requestId,
@@ -120,7 +117,7 @@ export const errorHandler = (
     statusCode = 500;
     message = 'Database Error';
     code = ErrorCodes.DATABASE_ERROR;
-    
+
     // Handle duplicate key error
     if ((error as any).code === 11000) {
       statusCode = 409;
@@ -185,11 +182,7 @@ export const asyncHandler = (fn: Function) => {
  * 404 Not Found handler
  */
 export const notFoundHandler = (req: Request, res: Response, next: NextFunction): void => {
-  const error = new AppError(
-    `Route ${req.originalUrl} not found`,
-    404,
-    ErrorCodes.NOT_FOUND
-  );
+  const error = new AppError(`Route ${req.originalUrl} not found`, 404, ErrorCodes.NOT_FOUND);
   next(error);
 };
 
@@ -212,7 +205,9 @@ export const createAuthError = (message: string = 'Authentication required'): Ap
 /**
  * Authorization error helper
  */
-export const createAuthorizationError = (message: string = 'Insufficient permissions'): AppError => {
+export const createAuthorizationError = (
+  message: string = 'Insufficient permissions',
+): AppError => {
   return new AppError(message, 403, ErrorCodes.AUTHORIZATION_ERROR);
 };
 
@@ -220,11 +215,7 @@ export const createAuthorizationError = (message: string = 'Insufficient permiss
  * External API error helper
  */
 export const createExternalAPIError = (message: string, service?: string): AppError => {
-  const error = new AppError(
-    `External API Error: ${message}`,
-    502,
-    ErrorCodes.EXTERNAL_API_ERROR
-  );
+  const error = new AppError(`External API Error: ${message}`, 502, ErrorCodes.EXTERNAL_API_ERROR);
   (error as any).service = service;
   return error;
 };

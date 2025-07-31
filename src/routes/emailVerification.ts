@@ -57,7 +57,7 @@ router.post('/send-verification', async (req, res) => {
     const emailSent = await emailService.sendVerificationEmail(
       email,
       user.personalInfo.firstName,
-      verificationToken
+      verificationToken,
     );
 
     if (!emailSent) {
@@ -99,7 +99,7 @@ router.post('/verify', async (req, res) => {
     }
 
     // Find user by email and token
-    const user = await User.findOne({ 
+    const user = await User.findOne({
       'loginCredentials.email': email,
       'emailVerification.verificationToken': token,
       'emailVerification.verificationTokenExpires': { $gt: new Date() },
@@ -175,14 +175,18 @@ router.post('/resend-verification', async (req, res) => {
     // Check if already verified
     if (user.emailVerification?.isVerified) {
       return res.status(400).json({
-        error: 'Already verified',  
+        error: 'Already verified',
         message: 'This email address is already verified',
       });
     }
 
     // Check rate limiting (prevent spam)
     const lastTokenGenerated = user.emailVerification?.verificationTokenExpires;
-    if (lastTokenGenerated && new Date(lastTokenGenerated.getTime() - 24 * 60 * 60 * 1000) > new Date(Date.now() - 5 * 60 * 1000)) {
+    if (
+      lastTokenGenerated &&
+      new Date(lastTokenGenerated.getTime() - 24 * 60 * 60 * 1000) >
+        new Date(Date.now() - 5 * 60 * 1000)
+    ) {
       return res.status(429).json({
         error: 'Rate limited',
         message: 'Please wait 5 minutes before requesting another verification email',
@@ -207,7 +211,7 @@ router.post('/resend-verification', async (req, res) => {
     const emailSent = await emailService.sendVerificationEmail(
       email,
       user.personalInfo.firstName,
-      verificationToken
+      verificationToken,
     );
 
     if (!emailSent) {
@@ -242,11 +246,14 @@ router.get('/verification-status/:email', async (req, res) => {
     const { email } = req.params;
 
     // Find user by email
-    const user = await User.findOne({ 'loginCredentials.email': email }, {
-      'emailVerification.isVerified': 1,
-      'emailVerification.verifiedAt': 1,
-      'personalInfo.firstName': 1,
-    });
+    const user = await User.findOne(
+      { 'loginCredentials.email': email },
+      {
+        'emailVerification.isVerified': 1,
+        'emailVerification.verifiedAt': 1,
+        'personalInfo.firstName': 1,
+      },
+    );
 
     if (!user) {
       return res.status(404).json({

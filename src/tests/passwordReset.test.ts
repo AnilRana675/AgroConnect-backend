@@ -26,7 +26,7 @@ const createTestApp = () => {
   app.use(express.json());
   app.use(helmet());
 
-  // Limit repeated requests to public APIs and/or endpoints  
+  // Limit repeated requests to public APIs and/or endpoints
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
@@ -89,11 +89,9 @@ describe('Password Reset API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/auth/forgot-password')
-        .send({
-          email: 'john.doe@test.com',
-        });
+      const response = await request(app).post('/api/auth/forgot-password').send({
+        email: 'john.doe@test.com',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('password reset link has been sent');
@@ -106,20 +104,16 @@ describe('Password Reset API', () => {
     });
 
     it('should return success message even for non-existent user (security)', async () => {
-      const response = await request(app)
-        .post('/api/auth/forgot-password')
-        .send({
-          email: 'nonexistent@test.com',
-        });
+      const response = await request(app).post('/api/auth/forgot-password').send({
+        email: 'nonexistent@test.com',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('password reset link has been sent');
     });
 
     it('should return error for missing email', async () => {
-      const response = await request(app)
-        .post('/api/auth/forgot-password')
-        .send({});
+      const response = await request(app).post('/api/auth/forgot-password').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('Please provide an email address');
@@ -155,13 +149,11 @@ describe('Password Reset API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/auth/reset-password')
-        .send({
-          email: 'jane.smith@test.com',
-          token: 'valid-reset-token-123',
-          newPassword: 'newpassword123',
-        });
+      const response = await request(app).post('/api/auth/reset-password').send({
+        email: 'jane.smith@test.com',
+        token: 'valid-reset-token-123',
+        newPassword: 'newpassword123',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('Password reset successfully');
@@ -170,7 +162,7 @@ describe('Password Reset API', () => {
       const updatedUser = await User.findOne({ 'loginCredentials.email': 'jane.smith@test.com' });
       expect(updatedUser?.passwordReset?.resetToken).toBeUndefined();
       expect(updatedUser?.passwordReset?.resetAt).toBeDefined();
-      
+
       // Password should be hashed (not equal to plain text)
       expect(updatedUser?.loginCredentials.password).not.toBe('newpassword123');
       expect(updatedUser?.loginCredentials.password?.length).toBeGreaterThan(20); // Hashed password length
@@ -203,13 +195,11 @@ describe('Password Reset API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/auth/reset-password')
-        .send({
-          email: 'bob.johnson@test.com',
-          token: 'wrong-token-456',
-          newPassword: 'newpassword123',
-        });
+      const response = await request(app).post('/api/auth/reset-password').send({
+        email: 'bob.johnson@test.com',
+        token: 'wrong-token-456',
+        newPassword: 'newpassword123',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('invalid or has expired');
@@ -242,13 +232,11 @@ describe('Password Reset API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/auth/reset-password')
-        .send({
-          email: 'alice.brown@test.com',
-          token: 'expired-token-789',
-          newPassword: 'newpassword123',
-        });
+      const response = await request(app).post('/api/auth/reset-password').send({
+        email: 'alice.brown@test.com',
+        token: 'expired-token-789',
+        newPassword: 'newpassword123',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('invalid or has expired');
@@ -281,25 +269,21 @@ describe('Password Reset API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/auth/reset-password')
-        .send({
-          email: 'charlie.wilson@test.com',
-          token: 'valid-token-weak-pass',
-          newPassword: '123', // Too short
-        });
+      const response = await request(app).post('/api/auth/reset-password').send({
+        email: 'charlie.wilson@test.com',
+        token: 'valid-token-weak-pass',
+        newPassword: '123', // Too short
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('at least 6 characters');
     });
 
     it('should return error for missing fields', async () => {
-      const response = await request(app)
-        .post('/api/auth/reset-password')
-        .send({
-          email: 'test@test.com',
-          // Missing token and newPassword
-        });
+      const response = await request(app).post('/api/auth/reset-password').send({
+        email: 'test@test.com',
+        // Missing token and newPassword
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('Email, reset token, and new password are required');
@@ -334,12 +318,10 @@ describe('Password Reset API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/auth/validate-reset-token')
-        .send({
-          email: 'david.miller@test.com',
-          token: 'valid-validation-token',
-        });
+      const response = await request(app).post('/api/auth/validate-reset-token').send({
+        email: 'david.miller@test.com',
+        token: 'valid-validation-token',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.isValid).toBe(true);
@@ -355,7 +337,7 @@ describe('Password Reset API', () => {
         },
         locationInfo: {
           province: 'Province 7',
-          district: 'District G',  
+          district: 'District G',
           municipality: 'Municipality T',
         },
         farmInfo: {
@@ -374,12 +356,10 @@ describe('Password Reset API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/auth/validate-reset-token')
-        .send({
-          email: 'eva.davis@test.com',
-          token: 'expired-validation-token',
-        });
+      const response = await request(app).post('/api/auth/validate-reset-token').send({
+        email: 'eva.davis@test.com',
+        token: 'expired-validation-token',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.isValid).toBe(false);
@@ -387,12 +367,10 @@ describe('Password Reset API', () => {
     });
 
     it('should return error for missing fields', async () => {
-      const response = await request(app)
-        .post('/api/auth/validate-reset-token')
-        .send({
-          email: 'test@test.com',
-          // Missing token
-        });
+      const response = await request(app).post('/api/auth/validate-reset-token').send({
+        email: 'test@test.com',
+        // Missing token
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('Email and reset token are required');

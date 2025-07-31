@@ -24,12 +24,12 @@ import winston from 'winston';
 import redisService from './services/redisService';
 import { errorHandler, notFoundHandler, AppError } from './middleware/errorHandler';
 import { requestIdMiddleware } from './middleware/requestId';
-import { 
-  compressionMiddleware, 
-  cacheControlMiddleware, 
+import {
+  compressionMiddleware,
+  cacheControlMiddleware,
   performanceMiddleware,
   requestSizeLimiter,
-  optimizedHealthCheck
+  optimizedHealthCheck,
 } from './middleware/performance';
 import { analyticsMiddleware } from './middleware/analytics';
 
@@ -87,19 +87,20 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // Environment-based CORS configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://agroconnect-frontend.onrender.com',
-        'https://agroconnect-frontend-iup3.onrender.com', 
-        'https://agro-connect-frontend-mu.vercel.app',
-        process.env.FRONTEND_URL || '',
-      ].filter((url) => url !== '') // Remove empty values
-    : [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3000',
-        process.env.FRONTEND_URL || '',
-      ].filter((url) => url !== ''),
+  origin:
+    process.env.NODE_ENV === 'production'
+      ? [
+          'https://agroconnect-frontend.onrender.com',
+          'https://agroconnect-frontend-iup3.onrender.com',
+          'https://agro-connect-frontend-mu.vercel.app',
+          process.env.FRONTEND_URL || '',
+        ].filter((url) => url !== '') // Remove empty values
+      : [
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'http://127.0.0.1:3000',
+          process.env.FRONTEND_URL || '',
+        ].filter((url) => url !== ''),
   credentials: true,
   optionsSuccessStatus: 200,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -140,7 +141,7 @@ const createRateLimiter = (windowMs: number, max: number, skipPaths: string[] = 
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     skip: (req) => {
       // Skip rate limiting for health checks and specified paths
-      return skipPaths.some(path => req.path.startsWith(path));
+      return skipPaths.some((path) => req.path.startsWith(path));
     },
     keyGenerator: (req) => {
       // Use IPv6-compatible key generator for proper IP handling
@@ -168,35 +169,35 @@ const createRateLimiter = (windowMs: number, max: number, skipPaths: string[] = 
 const generalLimiter = createRateLimiter(
   parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
   parseInt(process.env.RATE_LIMIT_MAX || '100'), // 100 requests per window
-  ['/health', '/'] // Skip health checks and root endpoint
+  ['/health', '/'], // Skip health checks and root endpoint
 );
 
 // Strict rate limiter for AI endpoints (more restrictive)
 const aiLimiter = createRateLimiter(
   parseInt(process.env.AI_RATE_LIMIT_WINDOW_MS || '60000'), // 1 minute
   parseInt(process.env.AI_RATE_LIMIT_MAX || '10'), // 10 AI requests per minute
-  []
+  [],
 );
 
 // Auth rate limiter (for login attempts - strict)
 const authLimiter = createRateLimiter(
   parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
   parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5'), // 5 auth attempts per 15 minutes
-  []
+  [],
 );
 
 // Registration rate limiter (more lenient for multi-step process)
 const registrationLimiter = createRateLimiter(
   parseInt(process.env.REGISTRATION_RATE_LIMIT_WINDOW_MS || '600000'), // 10 minutes
   parseInt(process.env.REGISTRATION_RATE_LIMIT_MAX || '20'), // 20 registration attempts per 10 minutes
-  []
+  [],
 );
 
 // Email verification rate limiter (lenient for development)
 const emailVerificationLimiter = createRateLimiter(
   parseInt(process.env.EMAIL_VERIFICATION_RATE_LIMIT_WINDOW_MS || '300000'), // 5 minutes
   parseInt(process.env.EMAIL_VERIFICATION_RATE_LIMIT_MAX || '10'), // 10 email requests per 5 minutes
-  []
+  [],
 );
 
 // Apply general rate limiting to all routes
@@ -273,11 +274,10 @@ const connectDB = async () => {
         process.exit(1);
       }
     });
-
   } catch (error) {
     winstonLogger.error('MongoDB connection error:', error);
     winstonLogger.error('Failed to connect to MongoDB. Retrying in 5 seconds...');
-    
+
     // Retry connection after specified delay
     const retryDelay = parseInt(process.env.DB_RETRY_DELAY || '5000');
     setTimeout(connectDB, retryDelay);

@@ -47,7 +47,10 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
 
     // Check if there's already a recent reset request (prevent spam)
     const recentResetRequest = user.passwordReset?.resetTokenExpires;
-    if (recentResetRequest && new Date(recentResetRequest.getTime() - 60 * 60 * 1000) > new Date(Date.now() - 5 * 60 * 1000)) {
+    if (
+      recentResetRequest &&
+      new Date(recentResetRequest.getTime() - 60 * 60 * 1000) > new Date(Date.now() - 5 * 60 * 1000)
+    ) {
       return res.status(429).json({
         error: 'Rate limited',
         message: 'Please wait 5 minutes before requesting another password reset',
@@ -70,7 +73,7 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
     const emailSent = await emailService.sendPasswordResetEmail(
       email,
       user.personalInfo.firstName,
-      resetToken
+      resetToken,
     );
 
     if (!emailSent) {
@@ -177,14 +180,17 @@ router.post('/validate-reset-token', async (req, res) => {
     }
 
     // Find user by email and valid reset token
-    const user = await User.findOne({
-      'loginCredentials.email': email,
-      'passwordReset.resetToken': token,
-      'passwordReset.resetTokenExpires': { $gt: new Date() },
-    }, {
-      'personalInfo.firstName': 1,
-      'passwordReset.resetTokenExpires': 1,
-    });
+    const user = await User.findOne(
+      {
+        'loginCredentials.email': email,
+        'passwordReset.resetToken': token,
+        'passwordReset.resetTokenExpires': { $gt: new Date() },
+      },
+      {
+        'personalInfo.firstName': 1,
+        'passwordReset.resetTokenExpires': 1,
+      },
+    );
 
     if (!user) {
       return res.status(400).json({

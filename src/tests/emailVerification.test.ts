@@ -92,11 +92,9 @@ describe('Email Verification API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/email-verification/send-verification')
-        .send({
-          email: 'john.doe@test.com',
-        });
+      const response = await request(app).post('/api/email-verification/send-verification').send({
+        email: 'john.doe@test.com',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('Verification email sent');
@@ -109,11 +107,9 @@ describe('Email Verification API', () => {
     });
 
     it('should return error for non-existent user', async () => {
-      const response = await request(app)
-        .post('/api/email-verification/send-verification')
-        .send({
-          email: 'nonexistent@test.com',
-        });
+      const response = await request(app).post('/api/email-verification/send-verification').send({
+        email: 'nonexistent@test.com',
+      });
 
       expect(response.status).toBe(404);
       expect(response.body.message).toContain('No account found');
@@ -147,11 +143,9 @@ describe('Email Verification API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/email-verification/send-verification')
-        .send({
-          email: 'jane.doe@test.com',
-        });
+      const response = await request(app).post('/api/email-verification/send-verification').send({
+        email: 'jane.doe@test.com',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('already verified');
@@ -188,12 +182,10 @@ describe('Email Verification API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/email-verification/verify')
-        .send({
-          email: 'bob.smith@test.com',
-          token: 'valid-token-123',
-        });
+      const response = await request(app).post('/api/email-verification/verify').send({
+        email: 'bob.smith@test.com',
+        token: 'valid-token-123',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('verified successfully');
@@ -233,12 +225,10 @@ describe('Email Verification API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .post('/api/email-verification/verify')
-        .send({
-          email: 'alice.johnson@test.com',
-          token: 'wrong-token-456',
-        });
+      const response = await request(app).post('/api/email-verification/verify').send({
+        email: 'alice.johnson@test.com',
+        token: 'wrong-token-456',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('invalid or has expired');
@@ -273,8 +263,9 @@ describe('Email Verification API', () => {
 
       await testUser.save();
 
-      const response = await request(app)
-        .get('/api/email-verification/verification-status/charlie.brown@test.com');
+      const response = await request(app).get(
+        '/api/email-verification/verification-status/charlie.brown@test.com',
+      );
 
       expect(response.status).toBe(200);
       expect(response.body.isVerified).toBe(true);
@@ -282,8 +273,9 @@ describe('Email Verification API', () => {
     });
 
     it('should return not found for non-existent user', async () => {
-      const response = await request(app)
-        .get('/api/email-verification/verification-status/nonexistent@test.com');
+      const response = await request(app).get(
+        '/api/email-verification/verification-status/nonexistent@test.com',
+      );
 
       expect(response.status).toBe(404);
       expect(response.body.message).toContain('No account found');

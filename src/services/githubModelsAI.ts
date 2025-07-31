@@ -56,7 +56,7 @@ class GitHubModelsAIService {
     if (this.requestCount >= maxRequestsPerMinute) {
       const waitTime = oneMinute - (now - this.requestResetTime) + 1000; // Add 1 second buffer
       logger.warn(`Rate limit reached, waiting ${waitTime}ms before next request`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
       this.requestCount = 0;
       this.requestResetTime = Date.now();
     }
@@ -65,7 +65,7 @@ class GitHubModelsAIService {
     const timeSinceLastRequest = now - this.lastRequestTime;
     if (timeSinceLastRequest < minInterval) {
       const waitTime = minInterval - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
 
     this.lastRequestTime = Date.now();
@@ -75,25 +75,31 @@ class GitHubModelsAIService {
   /**
    * Make API request with retry logic and exponential backoff
    */
-  private async makeAPIRequest(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+  private async makeAPIRequest(
+    url: string,
+    options: any,
+    maxRetries: number = 3,
+  ): Promise<Response> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.rateLimitDelay();
-        
+
         const response = await fetch(url, options);
-        
+
         // Handle rate limiting
         if (response.status === 429) {
           const retryAfter = response.headers.get('retry-after');
           const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 1000;
-          
-          logger.warn(`Rate limited (429), waiting ${waitTime}ms before retry ${attempt}/${maxRetries}`);
-          
+
+          logger.warn(
+            `Rate limited (429), waiting ${waitTime}ms before retry ${attempt}/${maxRetries}`,
+          );
+
           if (attempt === maxRetries) {
             throw new Error(`Rate limit exceeded after ${maxRetries} attempts`);
           }
-          
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
 
@@ -102,10 +108,12 @@ class GitHubModelsAIService {
           if (attempt === maxRetries) {
             throw new Error(`Server error ${response.status} after ${maxRetries} attempts`);
           }
-          
+
           const waitTime = Math.pow(2, attempt) * 1000;
-          logger.warn(`Server error ${response.status}, retrying in ${waitTime}ms (attempt ${attempt}/${maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          logger.warn(
+            `Server error ${response.status}, retrying in ${waitTime}ms (attempt ${attempt}/${maxRetries})`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
 
@@ -114,13 +122,16 @@ class GitHubModelsAIService {
         if (attempt === maxRetries) {
           throw error;
         }
-        
+
         const waitTime = Math.pow(2, attempt) * 1000;
-        logger.warn(`Request failed, retrying in ${waitTime}ms (attempt ${attempt}/${maxRetries}):`, error);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        logger.warn(
+          `Request failed, retrying in ${waitTime}ms (attempt ${attempt}/${maxRetries}):`,
+          error,
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
     }
-    
+
     throw new Error('Max retries exceeded');
   }
 

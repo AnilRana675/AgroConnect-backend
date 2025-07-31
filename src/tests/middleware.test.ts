@@ -8,7 +8,7 @@ import { requestIdMiddleware } from '../middleware/requestId';
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
-  
+
   // Add request ID middleware for testing
   app.use(requestIdMiddleware);
 
@@ -59,79 +59,67 @@ describe('Error Handler Middleware', () => {
   });
 
   it('should handle successful requests normally', async () => {
-    const response = await request(app)
-      .get('/test/success')
-      .expect(200);
+    const response = await request(app).get('/test/success').expect(200);
 
     expect(response.body.message).toBe('Success');
   });
 
   it('should handle AppError correctly', async () => {
-    const response = await request(app)
-      .get('/test/error')
-      .expect(400);
+    const response = await request(app).get('/test/error').expect(400);
 
     expect(response.body).toMatchObject({
       success: false,
       error: {
         message: 'Test error message',
         statusCode: 400,
-        code: 'TEST_ERROR'
-      }
+        code: 'TEST_ERROR',
+      },
     });
     expect(response.body.error.timestamp).toBeDefined();
     expect(response.body.error.requestId).toBeDefined();
   });
 
   it('should handle generic errors', async () => {
-    const response = await request(app)
-      .get('/test/async-error')
-      .expect(500);
+    const response = await request(app).get('/test/async-error').expect(500);
 
     expect(response.body).toMatchObject({
       success: false,
       error: {
         message: 'Internal Server Error',
         statusCode: 500,
-        code: 'INTERNAL_SERVER_ERROR'
-      }
+        code: 'INTERNAL_SERVER_ERROR',
+      },
     });
   });
 
   it('should handle ValidationError', async () => {
-    const response = await request(app)
-      .get('/test/validation-error')
-      .expect(400);
+    const response = await request(app).get('/test/validation-error').expect(400);
 
     expect(response.body).toMatchObject({
       success: false,
       error: {
         message: 'Validation Error',
         statusCode: 400,
-        code: 'VALIDATION_ERROR'
-      }
+        code: 'VALIDATION_ERROR',
+      },
     });
   });
 
   it('should handle CastError', async () => {
-    const response = await request(app)
-      .get('/test/cast-error')
-      .expect(400);
+    const response = await request(app).get('/test/cast-error').expect(400);
 
     expect(response.body).toMatchObject({
       success: false,
       error: {
         message: 'Invalid ID format',
         statusCode: 400,
-        code: 'VALIDATION_ERROR'
-      }
+        code: 'VALIDATION_ERROR',
+      },
     });
   });
 
   it('should include request ID in all error responses', async () => {
-    const response = await request(app)
-      .get('/test/error')
-      .expect(400);
+    const response = await request(app).get('/test/error').expect(400);
 
     expect(response.body.error.requestId).toBeDefined();
     expect(typeof response.body.error.requestId).toBe('string');
@@ -139,13 +127,11 @@ describe('Error Handler Middleware', () => {
 
   it('should not expose stack trace in production', async () => {
     process.env.NODE_ENV = 'production';
-    
-    const response = await request(app)
-      .get('/test/async-error')
-      .expect(500);
+
+    const response = await request(app).get('/test/async-error').expect(500);
 
     expect(response.body.error.stack).toBeUndefined();
-    
+
     process.env.NODE_ENV = 'test';
   });
 });
@@ -153,7 +139,7 @@ describe('Error Handler Middleware', () => {
 describe('AppError Class', () => {
   it('should create AppError with all properties', () => {
     const error = new AppError('Test message', 400, 'TEST_CODE');
-    
+
     expect(error.message).toBe('Test message');
     expect(error.statusCode).toBe(400);
     expect(error.code).toBe('TEST_CODE');
@@ -162,7 +148,7 @@ describe('AppError Class', () => {
 
   it('should create AppError with default values', () => {
     const error = new AppError('Test message');
-    
+
     expect(error.message).toBe('Test message');
     expect(error.statusCode).toBe(500);
     expect(error.code).toBeUndefined();

@@ -17,13 +17,13 @@ declare global {
 export const requestIdMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   // Generate unique request ID
   const requestId = uuidv4();
-  
+
   // Add to request object
   req.requestId = requestId;
-  
+
   // Add to response headers
   res.setHeader('X-Request-ID', requestId);
-  
+
   // Log request start
   logger.http('Request started', {
     requestId,
@@ -33,6 +33,6 @@ export const requestIdMiddleware = (req: Request, res: Response, next: NextFunct
     userAgent: req.get('User-Agent'),
     timestamp: new Date().toISOString(),
   });
-  
+
   next();
 };
