@@ -11,6 +11,8 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || '6ece32fddb8cf087ac4e27e7283ec97f';
 process.env.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || 'test-openrouter-key';
+process.env.EMAIL_USER = process.env.EMAIL_USER || 'test@example.com';
+process.env.EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || 'test-password';
 
 let mongoServer: MongoMemoryServer;
 

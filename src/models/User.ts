@@ -21,8 +21,26 @@ export interface IUser extends Document {
     password?: string;
   };
   onboardingStatus?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  emailVerification?: {
+    isVerified: boolean;
+    verificationToken?: string;
+    verificationTokenExpires?: Date;
+    verifiedAt?: Date;
+  };
+  passwordReset?: {
+    resetToken?: string;
+    resetTokenExpires?: Date;
+    resetAt?: Date;
+  };
+  profilePicture?: {
+    filename?: string;
+    originalName?: string;
+    mimeType?: string;
+    size?: number;
+    uploadedAt?: Date;
+  };
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const UserSchema: Schema = new Schema(
@@ -46,6 +64,24 @@ const UserSchema: Schema = new Schema(
       password: { type: String, required: true, minlength: 6 },
     },
     onboardingStatus: { type: String, trim: true },
+    emailVerification: {
+      isVerified: { type: Boolean, default: false },
+      verificationToken: { type: String },
+      verificationTokenExpires: { type: Date },
+      verifiedAt: { type: Date },
+    },
+    passwordReset: {
+      resetToken: { type: String },
+      resetTokenExpires: { type: Date },
+      resetAt: { type: Date },
+    },
+    profilePicture: {
+      filename: { type: String },
+      originalName: { type: String },
+      mimeType: { type: String },
+      size: { type: Number },
+      uploadedAt: { type: Date },
+    },
   },
   {
     timestamps: true,

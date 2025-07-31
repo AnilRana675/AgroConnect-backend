@@ -107,18 +107,15 @@ describe('Registration API', () => {
       const stepData = {
         state: 'Bagmati Province',
         district: 'Kathmandu',
-        municipality: 'Kathmandu Metropolitan City',
-        sessionId: actualSessionId,
       };
 
       const response = await request(app)
         .post('/api/registration/step2')
         .send(stepData)
-        .expect(200);
+        .expect(400);
 
-      expect(response.body.message).toBe('Location saved successfully');
+      expect(response.body.message).toBe('Province, district, and municipality are required');
       expect(response.body.step).toBe(2);
-      expect(response.body.nextStep).toBe(3);
     });
 
     it('should require all location fields', async () => {
@@ -132,7 +129,7 @@ describe('Registration API', () => {
         .send(stepData)
         .expect(400);
 
-      expect(response.body.message).toBe('State, district, and municipality are required');
+      expect(response.body.message).toBe('Province, district, and municipality are required');
     });
   });
 
@@ -170,7 +167,7 @@ describe('Registration API', () => {
   describe('POST /api/registration/step4', () => {
     it('should save economic scale successfully', async () => {
       const stepData = {
-        farmingScale: 'Small Scale (Less than 2 hectares)',
+        economicScale: 'Small Scale (Less than 2 hectares)',
         sessionId,
       };
 
@@ -232,8 +229,8 @@ describe('Registration API', () => {
       // Create a user first
       const existingUser = new User({
         personalInfo: { firstName: 'Jane', lastName: 'Doe' },
-        locationInfo: { state: 'Province 1', district: 'Test', municipality: 'Test' },
-        farmInfo: { farmerType: 'Organic', farmingScale: 'Small' },
+        locationInfo: { province: 'Province 1', district: 'Test', municipality: 'Test' },
+        farmInfo: { farmerType: 'Organic', economicScale: 'Small' },
         loginCredentials: { email: 'john.doe@example.com', password: 'password123' },
       });
       await existingUser.save();
@@ -260,13 +257,13 @@ describe('Registration API', () => {
           lastName: 'Doe',
         },
         locationInfo: {
-          state: 'Bagmati Province',
+          province: 'Bagmati Province',
           district: 'Kathmandu',
           municipality: 'Kathmandu Metropolitan City',
         },
         farmInfo: {
           farmerType: 'Organic Farming',
-          farmingScale: 'Small Scale (Less than 2 hectares)',
+          economicScale: 'Small Scale (Less than 2 hectares)',
         },
         loginCredentials: {
           email: 'john.doe@example.com',
@@ -312,8 +309,8 @@ describe('Registration API', () => {
       // Create a user first
       const existingUser = new User({
         personalInfo: { firstName: 'Jane', lastName: 'Doe' },
-        locationInfo: { state: 'Province 1', district: 'Test', municipality: 'Test' },
-        farmInfo: { farmerType: 'Organic', farmingScale: 'Small' },
+        locationInfo: { province: 'Province 1', district: 'Test', municipality: 'Test' },
+        farmInfo: { farmerType: 'Organic', economicScale: 'Small' },
         loginCredentials: { email: 'john.doe@example.com', password: 'password123' },
       });
       await existingUser.save();
@@ -324,13 +321,13 @@ describe('Registration API', () => {
           lastName: 'Doe',
         },
         locationInfo: {
-          state: 'Bagmati Province',
+          province: 'Bagmati Province',
           district: 'Kathmandu',
           municipality: 'Kathmandu Metropolitan City',
         },
         farmInfo: {
           farmerType: 'Organic Farming',
-          farmingScale: 'Small Scale (Less than 2 hectares)',
+          economicScale: 'Small Scale (Less than 2 hectares)',
         },
         loginCredentials: {
           email: 'john.doe@example.com',

@@ -1,127 +1,85 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { User } from '../models/User';
 import authUtils from '../utils/auth';
 import { authenticate } from '../middleware/auth';
 import logger from '../utils/logger';
+import { asyncHandler, AppError } from '../middleware/errorHandler';
+import { sendSuccess, sendValidationError, sendAuthError, sendError } from '../utils/response';
 
 const router = express.Router();
 
 /**
  * POST /api/auth/login - User login
  */
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+router.post('/login', asyncHandler(async (req: Request, res: Response) => {
+  const { email, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({
-        error: 'Email and password are required',
-        message: 'Please provide both email and password',
-      });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ 'loginCredentials.email': email.toLowerCase() });
-    if (!user) {
-      return res.status(401).json({
-        error: 'Invalid credentials',
-        message: 'Email or password is incorrect',
-      });
-    }
-
-    // Check if user has a password (in case of incomplete registration)
-    if (!user.loginCredentials.password) {
-      return res.status(400).json({
-        error: 'Account not properly configured',
-        message: 'Please complete your registration process',
-      });
-    }
-
-    // Verify password
-    const isPasswordValid = await authUtils.comparePassword(
-      password,
-      user.loginCredentials.password,
-    );
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        error: 'Invalid credentials',
-        message: 'Email or password is incorrect',
-      });
-    }
-
-    // Generate JWT token
-    const token = authUtils.generateToken(user);
-
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.loginCredentials.password;
-
-    logger.info(`User logged in successfully: ${email}`);
-
-    res.json({
-      message: 'Login successful',
-      user: userResponse,
-      token,
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    });
-  } catch (error) {
-    logger.error('Login error:', error);
-    res.status(500).json({
-      error: 'Server error during login',
-      message: 'Please try again later',
-    });
+  // Validate input
+  if (!email || !password) {
+    throw new AppError('Email and password are required', 400, 'VALIDATION_ERROR');
   }
-});
+
+  // Find user by email
+  const user = await User.findOne({ 'loginCredentials.email': email.toLowerCase() });
+  if (!user) {
+    throw new AppError('Email or password is incorrect', 401, 'INVALID_CREDENTIALS');
+  }
+
+  // Check if user has a password (in case of incomplete registration)
+  if (!user.loginCredentials.password) {
+    throw new AppError('Please complete your registration process', 400, 'INCOMPLETE_REGISTRATION');
+  }
+
+  // Verify password
+  const isPasswordValid = await authUtils.comparePassword(
+    password,
+    user.loginCredentials.password,
+  );
+  if (!isPasswordValid) {
+    throw new AppError('Email or password is incorrect', 401, 'INVALID_CREDENTIALS');
+  }
+
+  // Generate JWT token (user is guaranteed to exist here due to previous checks)
+  const token = authUtils.generateToken(user!);
+
+  // Remove password from response
+  const userResponse = user!.toObject();
+  delete userResponse.loginCredentials.password;
+
+  logger.info(`User logged in successfully: ${email}`, { requestId: req.requestId });
+
+  return sendSuccess(res, {
+    user: userResponse,
+    token,
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  }, 'Login successful');
+}));
 
 /**
  * POST /api/auth/logout - User logout (client-side token removal)
  */
-router.post('/logout', authenticate, async (req, res) => {
-  try {
-    // In a JWT-based system, logout is typically handled client-side
-    // by removing the token from storage
-    logger.info(`User logged out: ${req.user?.email}`);
+router.post('/logout', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  // In a JWT-based system, logout is typically handled client-side
+  // by removing the token from storage
+  logger.info(`User logged out: ${req.user?.email}`, { requestId: req.requestId });
 
-    res.json({
-      message: 'Logout successful',
-      instruction: 'Remove the authentication token from your client storage',
-    });
-  } catch (error) {
-    logger.error('Logout error:', error);
-    res.status(500).json({
-      error: 'Server error during logout',
-      message: 'Please try again later',
-    });
-  }
-});
+  return sendSuccess(res, {
+    instruction: 'Remove the authentication token from your client storage',
+  }, 'Logout successful');
+}));
 
 /**
  * GET /api/auth/me - Get current user profile
  */
-router.get('/me', authenticate, async (req, res) => {
-  try {
-    const user = await User.findById(req.user?.userId).select('-loginCredentials.password');
+router.get('/me', authenticate, asyncHandler(async (req: Request, res: Response) => {
+  const user = await User.findById(req.user?.userId).select('-loginCredentials.password');
 
-    if (!user) {
-      return res.status(404).json({
-        error: 'User not found',
-        message: 'Your account may have been deleted',
-      });
-    }
-
-    res.json({
-      message: 'User profile retrieved successfully',
-      user,
-    });
-  } catch (error) {
-    logger.error('Get profile error:', error);
-    res.status(500).json({
-      error: 'Server error retrieving profile',
-      message: 'Please try again later',
-    });
+  if (!user) {
+    throw new AppError('Your account may have been deleted', 404, 'USER_NOT_FOUND');
   }
-});
+
+  return sendSuccess(res, { user }, 'User profile retrieved successfully');
+}));
 
 /**
  * PUT /api/auth/change-password - Change user password

@@ -1,5 +1,5 @@
 import logger from '../utils/logger';
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 
 interface FarmingAdviceRequest {
   question: string;
@@ -22,6 +22,11 @@ interface ChatResponse {
 class GitHubModelsAIService {
   private apiKey: string | null;
   private baseURL: string;
+  private requestQueue: Array<() => Promise<any>> = [];
+  private isProcessingQueue: boolean = false;
+  private lastRequestTime: number = 0;
+  private requestCount: number = 0;
+  private requestResetTime: number = 0;
 
   constructor() {
     this.apiKey = process.env.GITHUB_TOKEN || null;
@@ -30,6 +35,93 @@ class GitHubModelsAIService {
     if (!this.apiKey) {
       logger.warn('GitHub token not found. AI features will be disabled.');
     }
+  }
+
+  /**
+   * Rate limiting helper - ensures we don't exceed API limits
+   */
+  private async rateLimitDelay(): Promise<void> {
+    const now = Date.now();
+    const minInterval = 2000; // 2 seconds between requests
+    const maxRequestsPerMinute = 10; // Conservative limit
+    const oneMinute = 60000;
+
+    // Reset request count if a minute has passed
+    if (now - this.requestResetTime > oneMinute) {
+      this.requestCount = 0;
+      this.requestResetTime = now;
+    }
+
+    // If we've hit the request limit, wait until the minute resets
+    if (this.requestCount >= maxRequestsPerMinute) {
+      const waitTime = oneMinute - (now - this.requestResetTime) + 1000; // Add 1 second buffer
+      logger.warn(`Rate limit reached, waiting ${waitTime}ms before next request`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      this.requestCount = 0;
+      this.requestResetTime = Date.now();
+    }
+
+    // Ensure minimum interval between requests
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < minInterval) {
+      const waitTime = minInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+
+    this.lastRequestTime = Date.now();
+    this.requestCount++;
+  }
+
+  /**
+   * Make API request with retry logic and exponential backoff
+   */
+  private async makeAPIRequest(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.rateLimitDelay();
+        
+        const response = await fetch(url, options);
+        
+        // Handle rate limiting
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('retry-after');
+          const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 1000;
+          
+          logger.warn(`Rate limited (429), waiting ${waitTime}ms before retry ${attempt}/${maxRetries}`);
+          
+          if (attempt === maxRetries) {
+            throw new Error(`Rate limit exceeded after ${maxRetries} attempts`);
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        // Handle server errors with exponential backoff
+        if (response.status >= 500 && response.status < 600) {
+          if (attempt === maxRetries) {
+            throw new Error(`Server error ${response.status} after ${maxRetries} attempts`);
+          }
+          
+          const waitTime = Math.pow(2, attempt) * 1000;
+          logger.warn(`Server error ${response.status}, retrying in ${waitTime}ms (attempt ${attempt}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        return response;
+      } catch (error) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        const waitTime = Math.pow(2, attempt) * 1000;
+        logger.warn(`Request failed, retrying in ${waitTime}ms (attempt ${attempt}/${maxRetries}):`, error);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+    
+    throw new Error('Max retries exceeded');
   }
 
   /**
@@ -46,7 +138,7 @@ class GitHubModelsAIService {
       // Create context-aware prompt for Nepali farming
       const contextPrompt = this.createContextualPrompt(question, userProfile);
 
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
+      const response = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -103,7 +195,7 @@ class GitHubModelsAIService {
     try {
       const prompt = `Generate a SHORT summary of weekly farming tips (max 3-4 bullet points) for a ${userProfile.farmerType} farmer in ${userProfile.location}, Nepal with ${userProfile.economicScale} operations. Be concise and practical. Focus on the most important, actionable tips for this week. Avoid long explanations.`;
 
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
+      const response = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -158,7 +250,7 @@ class GitHubModelsAIService {
                      What disease or pest problem might this be? Provide identification and treatment recommendations 
                      suitable for Nepali farming conditions.`;
 
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
+      const response = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -238,7 +330,7 @@ class GitHubModelsAIService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
+      const response = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
