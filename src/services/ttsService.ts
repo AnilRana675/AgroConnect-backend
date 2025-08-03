@@ -7,7 +7,7 @@ let requestQueue: Array<{
   text: string;
   voice: string;
   resolve: (value: Buffer) => void;
-  reject: (reason: any) => void;
+  reject: (reason: Error) => void;
 }> = [];
 
 export async function generateSpeech({
@@ -45,7 +45,7 @@ async function processQueue() {
     const audioBuffer = await processTTSRequest(request.text, request.voice);
     request.resolve(audioBuffer);
   } catch (error) {
-    request.reject(error);
+    request.reject(error instanceof Error ? error : new Error(String(error)));
   } finally {
     isProcessing = false;
     // Process next request in queue

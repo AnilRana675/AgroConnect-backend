@@ -23,6 +23,7 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
+    "mcp:test": "npx @codacy/codacy-mcp",
     "postinstall": "npm run build"
   },
   "keywords": [],
@@ -30,6 +31,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@codacy/codacy-mcp": "^0.6.18",
     "@jest/globals": "^29.7.0",
     "@types/axios": "^0.9.36",
     "@types/bcryptjs": "^2.4.6",

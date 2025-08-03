@@ -6,6 +6,13 @@ logs/
 coverage/
 *.log
 .DS_Store
-.vscode/settings.json
+.vscode/
 .env.development
+
+# Codacy local analysis (optional - you can remove this line to commit .codacy folder)
+.codacy/
 .env.production
+
+#Ignore vscode AI rules
+.github
+.github/copilot-instructions.md

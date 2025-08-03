@@ -10,7 +10,7 @@ router.get('/status', (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { text, voice, model } = req.body;
+  const { text, voice } = req.body;
   if (!text) {
     return res.status(400).json({ error: 'Text is required' });
   }
