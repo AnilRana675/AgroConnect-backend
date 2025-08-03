@@ -16,6 +16,7 @@ import translationRoutes from './routes/translation';
 import monitoringRoutes from './routes/monitoring';
 import emailVerificationRoutes from './routes/emailVerification';
 import passwordResetRoutes from './routes/passwordReset';
+import ttsRouter from './routes/tts';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { ipKeyGenerator } from 'express-rate-limit';
@@ -228,6 +229,7 @@ app.use('/api/users', userRoutes); // Uses general rate limiting
 app.use('/api/cache', cacheRoutes); // Uses general rate limiting
 app.use('/api/translation', translationRoutes); // Uses general rate limiting
 app.use('/api/monitoring', generalLimiter, monitoringRoutes); // System monitoring endpoints
+app.use('/api/tts', ttsRouter); // TTS endpoints
 
 // Enhanced MongoDB connection with pooling and error handling
 const connectDB = async () => {

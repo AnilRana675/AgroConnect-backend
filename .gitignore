@@ -9,3 +9,6 @@ coverage/
 .vscode/settings.json
 .env.development
 .env.production
+.github
+.github/copilot-instructions.md.github
+.github/copilot-instructions.md
