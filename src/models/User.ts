@@ -39,6 +39,7 @@ export interface IUser extends Document {
     size?: number;
     uploadedAt?: Date;
   };
+  preferredLanguage?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -81,6 +82,12 @@ const UserSchema: Schema = new Schema(
       mimeType: { type: String },
       size: { type: Number },
       uploadedAt: { type: Date },
+    },
+    preferredLanguage: {
+      type: String,
+      default: 'en',
+      required: true,
+      enum: ['en', 'ne'],
     },
   },
   {

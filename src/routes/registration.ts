@@ -441,6 +441,11 @@ router.post('/complete', async (req, res) => {
     // Create new user
     const newUser = new User(userData);
 
+    // Ensure default language is set
+    if (!newUser.preferredLanguage) {
+      newUser.preferredLanguage = 'en';
+    }
+
     // Set up email verification
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours

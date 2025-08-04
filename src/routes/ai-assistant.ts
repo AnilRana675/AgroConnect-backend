@@ -5,6 +5,7 @@ import { User, IUser } from '../models/User';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import logger from '../utils/logger';
 import redisService from '../services/redisService';
+import { ensureUserLanguage } from '../services/userService';
 // import { cacheMiddleware } from '../middleware/cache';
 
 const router = express.Router();
@@ -40,7 +41,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const { question, userId, userLanguage = 'en' } = req.body;
+    const { question, userId } = req.body;
 
     if (!question) {
       return res.status(400).json({
@@ -51,19 +52,65 @@ router.post('/ask', optionalAuth, async (req, res) => {
       });
     }
 
-    // Validate userLanguage
-    if (!['en', 'ne'].includes(userLanguage)) {
-      return res.status(400).json({
-        success: false,
-        error: 'User language must be either "en" or "ne"',
-        requestId,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
     let userProfile = null;
     let userDetails = null;
     let translatedQuestion = question;
+    let userLanguage = 'en'; // Default to English
+
+    // Get user profile from authenticated user or provided userId
+    const targetUserId = req.user?.userId || userId;
+    if (targetUserId) {
+      try {
+        // Ensure user has a language set
+        await ensureUserLanguage(targetUserId);
+
+        // Check cache for user profile first
+        const userProfileKey = redisService.generateUserProfileKey(targetUserId);
+        let user = await redisService.get<IUser>(userProfileKey);
+
+        if (!user) {
+          // Fetch from database if not in cache
+          user = await User.findById(targetUserId);
+          if (user) {
+            // Ensure user has a preferred language set
+            if (!user.preferredLanguage) {
+              user.preferredLanguage = 'en';
+              await user.save();
+            }
+            // Cache user profile
+            await redisService.set(userProfileKey, user, redisService.getUserProfileTTL());
+          }
+        }
+
+        if (user) {
+          // Use user's preferred language from database
+          userLanguage = user.preferredLanguage || 'en';
+
+          userProfile = {
+            farmerType: user.farmInfo.farmerType,
+            location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
+            economicScale: user.farmInfo.economicScale,
+            onboardingStatus: user.onboardingStatus,
+          };
+          userDetails = {
+            userId: user._id,
+            name: `${user.personalInfo.firstName}${user.personalInfo.middleName ? ' ' + user.personalInfo.middleName : ''} ${user.personalInfo.lastName}`,
+            district: user.locationInfo.district,
+            province: user.locationInfo.province,
+            farmerType: user.farmInfo.farmerType,
+            economicScale: user.farmInfo.economicScale,
+            onboardingStatus: user.onboardingStatus,
+          };
+        }
+      } catch (error) {
+        logger.warn(`Failed to fetch user profile for ${targetUserId}:`, error);
+      }
+    }
+
+    // Validate userLanguage
+    if (!['en', 'ne'].includes(userLanguage)) {
+      userLanguage = 'en'; // Fallback to English if invalid
+    }
 
     // Translate question to English if it's in Nepali
     if (userLanguage === 'ne') {
@@ -83,45 +130,6 @@ router.post('/ask', optionalAuth, async (req, res) => {
       } catch (translationError) {
         logger.warn('Failed to translate question, using original:', translationError);
         translatedQuestion = question;
-      }
-    }
-
-    // Get user profile from authenticated user or provided userId
-    const targetUserId = req.user?.userId || userId;
-    if (targetUserId) {
-      try {
-        // Check cache for user profile first
-        const userProfileKey = redisService.generateUserProfileKey(targetUserId);
-        let user = await redisService.get<IUser>(userProfileKey);
-
-        if (!user) {
-          // Fetch from database if not in cache
-          user = await User.findById(targetUserId);
-          if (user) {
-            // Cache user profile
-            await redisService.set(userProfileKey, user, redisService.getUserProfileTTL());
-          }
-        }
-
-        if (user) {
-          userProfile = {
-            farmerType: user.farmInfo.farmerType,
-            location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
-            economicScale: user.farmInfo.economicScale,
-            onboardingStatus: user.onboardingStatus,
-          };
-          userDetails = {
-            userId: user._id,
-            name: `${user.personalInfo.firstName}${user.personalInfo.middleName ? ' ' + user.personalInfo.middleName : ''} ${user.personalInfo.lastName}`,
-            district: user.locationInfo.district,
-            province: user.locationInfo.province,
-            farmerType: user.farmInfo.farmerType,
-            economicScale: user.farmInfo.economicScale,
-            onboardingStatus: user.onboardingStatus,
-          };
-        }
-      } catch (error) {
-        logger.warn(`Failed to fetch user profile for ${targetUserId}:`, error);
       }
     }
 
@@ -248,13 +256,17 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
       });
     }
 
+    // Ensure user has a preferred language set
+    await ensureUserLanguage(targetUserId);
+    const userLanguage = user.preferredLanguage || 'en';
+
     const userProfile = {
       farmerType: user.farmInfo.farmerType,
       location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
       economicScale: user.farmInfo.economicScale,
     };
 
-    const tips = await githubModelsAI.getWeeklyTips(userProfile);
+    const tipsData = await githubModelsAI.getWeeklyTips(userProfile, userLanguage);
     const responseTime = Date.now() - startTime;
 
     // Get current date info for seasonal context
@@ -265,7 +277,8 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
     res.json({
       success: true,
       data: {
-        tips,
+        tips: tipsData[userLanguage as 'en' | 'ne'], // Display in user's preferred language
+        tipsMultilingual: tipsData, // Include both languages for potential language switching
         userProfile,
         userDetails: {
           userId: user._id,
@@ -291,7 +304,7 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
         contentType: 'weekly_farming_tips',
       },
       analytics: {
-        tipsLength: tips.length,
+        tipsLength: tipsData[userLanguage as 'en' | 'ne'].length,
         processingTime: responseTime,
         personalizationLevel: 'full',
         cached: false,
@@ -475,10 +488,19 @@ function extractPreventiveMeasures(_diagnosis: string): string[] {
 // Get weekly farming tips for authenticated user
 router.get('/weekly-tips', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.user?.userId);
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    // Ensure user has a preferred language set
+    await ensureUserLanguage(userId);
+    const userLanguage = user.preferredLanguage || 'en';
 
     const userProfile = {
       farmerType: user.farmInfo.farmerType,
@@ -486,11 +508,13 @@ router.get('/weekly-tips', authenticate, async (req, res) => {
       economicScale: user.farmInfo.economicScale,
     };
 
-    const tips = await githubModelsAI.getWeeklyTips(userProfile);
+    const tipsData = await githubModelsAI.getWeeklyTips(userProfile, userLanguage);
 
     res.json({
-      tips,
+      tips: tipsData[userLanguage as 'en' | 'ne'], // Display in user's preferred language
+      tipsMultilingual: tipsData, // Include both languages
       userProfile,
+      language: userLanguage,
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {

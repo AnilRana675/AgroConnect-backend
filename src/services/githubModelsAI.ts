@@ -192,21 +192,30 @@ class GitHubModelsAIService {
   }
 
   /**
-   * Get weekly farming tips based on user profile
+   * Get weekly farming tips based on user profile in both English and Nepali
    */
-  async getWeeklyTips(userProfile: {
-    farmerType: string;
-    location: string;
-    economicScale: string;
-  }): Promise<string> {
+  async getWeeklyTips(
+    userProfile: {
+      farmerType: string;
+      location: string;
+      economicScale: string;
+    },
+    preferredLanguage: string = 'en',
+  ): Promise<{ en: string; ne: string; displayLanguage: string }> {
     if (!this.apiKey) {
-      return 'AI service is not configured. Please check your GitHub token.';
+      const fallbackMessage = 'AI service is not configured. Please check your GitHub token.';
+      return {
+        en: fallbackMessage,
+        ne: 'AI सेवा कन्फिगर गरिएको छैन। कृपया आफ्नो GitHub टोकन जाँच गर्नुहोस्।',
+        displayLanguage: preferredLanguage,
+      };
     }
 
     try {
-      const prompt = `Generate a SHORT summary of weekly farming tips (max 3-4 bullet points) for a ${userProfile.farmerType} farmer in ${userProfile.location}, Nepal with ${userProfile.economicScale} operations. Be concise and practical. Focus on the most important, actionable tips for this week. Avoid long explanations.`;
+      const basePrompt = `Generate a SHORT summary of weekly farming tips (max 3-4 bullet points) for a ${userProfile.farmerType} farmer in ${userProfile.location}, Nepal with ${userProfile.economicScale} operations. Be concise and practical. Focus on the most important, actionable tips for this week. Avoid long explanations.`;
 
-      const response = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
+      // Generate English version
+      const englishResponse = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -217,11 +226,11 @@ class GitHubModelsAIService {
             {
               role: 'system',
               content: `You are an agricultural expert for Nepal. Provide weekly farming tips 
-                       that are practical, season-appropriate, and suitable for local conditions. Keep your answer very short and concise, using only 2-4 bullet points.`,
+                       that are practical, season-appropriate, and suitable for local conditions. Keep your answer very short and concise, using only 2-4 bullet points. Respond in English language.`,
             },
             {
               role: 'user',
-              content: prompt,
+              content: `${basePrompt} Respond in English language.`,
             },
           ],
           model: 'Llama-3.2-11B-Vision-Instruct',
@@ -231,20 +240,71 @@ class GitHubModelsAIService {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      if (!englishResponse.ok) {
+        throw new Error(
+          `English API request failed: ${englishResponse.status} ${englishResponse.statusText}`,
+        );
       }
 
-      const data = (await response.json()) as ChatResponse;
-      const tips = data.choices[0]?.message?.content?.trim() || 'No tips available.';
+      const englishData = (await englishResponse.json()) as ChatResponse;
+      const englishTips = englishData.choices[0]?.message?.content?.trim() || 'No tips available.';
+
+      // Small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Generate Nepali version
+      const nepaliResponse = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: `You are an agricultural expert for Nepal. Provide weekly farming tips 
+                       that are practical, season-appropriate, and suitable for local conditions. Keep your answer very short and concise, using only 2-4 bullet points. Respond in Nepali language (देवनागरी script).`,
+            },
+            {
+              role: 'user',
+              content: `${basePrompt} Respond in Nepali language (देवनागरी script).`,
+            },
+          ],
+          model: 'Llama-3.2-11B-Vision-Instruct',
+          temperature: 0.6,
+          max_tokens: 400,
+          top_p: 1,
+        }),
+      });
+
+      if (!nepaliResponse.ok) {
+        throw new Error(
+          `Nepali API request failed: ${nepaliResponse.status} ${nepaliResponse.statusText}`,
+        );
+      }
+
+      const nepaliData = (await nepaliResponse.json()) as ChatResponse;
+      const nepaliTips =
+        nepaliData.choices[0]?.message?.content?.trim() || 'कुनै सुझावहरू उपलब्ध छैनन्।';
 
       logger.info(
-        `Weekly farming tips generated for ${userProfile.farmerType} in ${userProfile.location}`,
+        `Weekly farming tips generated for ${userProfile.farmerType} in ${userProfile.location} (both languages)`,
       );
-      return tips;
+
+      return {
+        en: englishTips,
+        ne: nepaliTips,
+        displayLanguage: preferredLanguage,
+      };
     } catch (error) {
       logger.error('Error generating weekly tips:', error);
-      throw new Error('Failed to generate weekly tips. Please try again.');
+      const fallbackMessage = 'Failed to generate weekly tips. Please try again.';
+      return {
+        en: fallbackMessage,
+        ne: 'साप्ताहिक सुझावहरू उत्पन्न गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्।',
+        displayLanguage: preferredLanguage,
+      };
     }
   }
 
