@@ -21,7 +21,10 @@ export const ensureUserLanguage = async (userId: string): Promise<void> => {
 /**
  * Update user's preferred language
  */
-export const updateUserLanguage = async (userId: string, language: string): Promise<IUser | null> => {
+export const updateUserLanguage = async (
+  userId: string,
+  language: string,
+): Promise<IUser | null> => {
   try {
     if (!['en', 'ne'].includes(language)) {
       throw new Error('Invalid language. Must be "en" or "ne"');
@@ -34,7 +37,7 @@ export const updateUserLanguage = async (userId: string, language: string): Prom
 
     user.preferredLanguage = language;
     await user.save();
-    
+
     logger.info(`Updated language preference for user ${userId} to ${language}`);
     return user;
   } catch (error) {
@@ -52,7 +55,7 @@ export const getUserLanguage = async (userId: string): Promise<string> => {
     if (!user) {
       return 'en'; // Default fallback
     }
-    
+
     return user.preferredLanguage || 'en';
   } catch (error) {
     logger.error('Error getting user language:', error);

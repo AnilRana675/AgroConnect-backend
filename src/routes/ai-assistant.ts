@@ -63,7 +63,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
       try {
         // Ensure user has a language set
         await ensureUserLanguage(targetUserId);
-        
+
         // Check cache for user profile first
         const userProfileKey = redisService.generateUserProfileKey(targetUserId);
         let user = await redisService.get<IUser>(userProfileKey);
@@ -85,7 +85,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
         if (user) {
           // Use user's preferred language from database
           userLanguage = user.preferredLanguage || 'en';
-          
+
           userProfile = {
             farmerType: user.farmInfo.farmerType,
             location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
@@ -256,13 +256,17 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
       });
     }
 
+    // Ensure user has a preferred language set
+    await ensureUserLanguage(targetUserId);
+    const userLanguage = user.preferredLanguage || 'en';
+
     const userProfile = {
       farmerType: user.farmInfo.farmerType,
       location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
       economicScale: user.farmInfo.economicScale,
     };
 
-    const tips = await githubModelsAI.getWeeklyTips(userProfile);
+    const tipsData = await githubModelsAI.getWeeklyTips(userProfile, userLanguage);
     const responseTime = Date.now() - startTime;
 
     // Get current date info for seasonal context
@@ -273,7 +277,8 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
     res.json({
       success: true,
       data: {
-        tips,
+        tips: tipsData[userLanguage as 'en' | 'ne'], // Display in user's preferred language
+        tipsMultilingual: tipsData, // Include both languages for potential language switching
         userProfile,
         userDetails: {
           userId: user._id,
@@ -299,7 +304,7 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
         contentType: 'weekly_farming_tips',
       },
       analytics: {
-        tipsLength: tips.length,
+        tipsLength: tipsData[userLanguage as 'en' | 'ne'].length,
         processingTime: responseTime,
         personalizationLevel: 'full',
         cached: false,
@@ -483,10 +488,19 @@ function extractPreventiveMeasures(_diagnosis: string): string[] {
 // Get weekly farming tips for authenticated user
 router.get('/weekly-tips', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.user?.userId);
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    // Ensure user has a preferred language set
+    await ensureUserLanguage(userId);
+    const userLanguage = user.preferredLanguage || 'en';
 
     const userProfile = {
       farmerType: user.farmInfo.farmerType,
@@ -494,11 +508,13 @@ router.get('/weekly-tips', authenticate, async (req, res) => {
       economicScale: user.farmInfo.economicScale,
     };
 
-    const tips = await githubModelsAI.getWeeklyTips(userProfile);
+    const tipsData = await githubModelsAI.getWeeklyTips(userProfile, userLanguage);
 
     res.json({
-      tips,
+      tips: tipsData[userLanguage as 'en' | 'ne'], // Display in user's preferred language
+      tipsMultilingual: tipsData, // Include both languages
       userProfile,
+      language: userLanguage,
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {

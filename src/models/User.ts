@@ -83,11 +83,11 @@ const UserSchema: Schema = new Schema(
       size: { type: Number },
       uploadedAt: { type: Date },
     },
-    preferredLanguage: { 
-      type: String, 
+    preferredLanguage: {
+      type: String,
       default: 'en',
       required: true,
-      enum: ['en', 'ne']
+      enum: ['en', 'ne'],
     },
   },
   {
