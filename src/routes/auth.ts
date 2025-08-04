@@ -176,6 +176,50 @@ router.put('/change-password', authenticate, async (req, res) => {
 });
 
 /**
+ * PUT /api/auth/language - Update user language preference
+ */
+router.put('/language', authenticate, async (req, res) => {
+  try {
+    const { language } = req.body;
+
+    // Validate language
+    if (!language || !['en', 'ne'].includes(language)) {
+      return res.status(400).json({
+        error: 'Invalid language',
+        message: 'Language must be either "en" or "ne"',
+      });
+    }
+
+    // Find and update user
+    const user = await User.findById(req.user?.userId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: 'Please contact support',
+      });
+    }
+
+    // Update language preference
+    user.preferredLanguage = language;
+    await user.save();
+
+    logger.info(`Language preference updated for user: ${req.user?.email} to ${language}`);
+
+    res.json({
+      message: 'Language preference updated successfully',
+      language: language,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Update language preference error:', error);
+    res.status(500).json({
+      error: 'Server error updating language preference',
+      message: 'Please try again later',
+    });
+  }
+});
+
+/**
  * POST /api/auth/verify-token - Verify if token is valid
  */
 router.post('/verify-token', async (req, res) => {

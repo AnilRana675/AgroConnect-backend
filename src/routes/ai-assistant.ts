@@ -5,6 +5,7 @@ import { User, IUser } from '../models/User';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import logger from '../utils/logger';
 import redisService from '../services/redisService';
+import { ensureUserLanguage } from '../services/userService';
 // import { cacheMiddleware } from '../middleware/cache';
 
 const router = express.Router();
@@ -40,7 +41,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const { question, userId, userLanguage = 'en' } = req.body;
+    const { question, userId } = req.body;
 
     if (!question) {
       return res.status(400).json({
@@ -51,19 +52,65 @@ router.post('/ask', optionalAuth, async (req, res) => {
       });
     }
 
-    // Validate userLanguage
-    if (!['en', 'ne'].includes(userLanguage)) {
-      return res.status(400).json({
-        success: false,
-        error: 'User language must be either "en" or "ne"',
-        requestId,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
     let userProfile = null;
     let userDetails = null;
     let translatedQuestion = question;
+    let userLanguage = 'en'; // Default to English
+
+    // Get user profile from authenticated user or provided userId
+    const targetUserId = req.user?.userId || userId;
+    if (targetUserId) {
+      try {
+        // Ensure user has a language set
+        await ensureUserLanguage(targetUserId);
+        
+        // Check cache for user profile first
+        const userProfileKey = redisService.generateUserProfileKey(targetUserId);
+        let user = await redisService.get<IUser>(userProfileKey);
+
+        if (!user) {
+          // Fetch from database if not in cache
+          user = await User.findById(targetUserId);
+          if (user) {
+            // Ensure user has a preferred language set
+            if (!user.preferredLanguage) {
+              user.preferredLanguage = 'en';
+              await user.save();
+            }
+            // Cache user profile
+            await redisService.set(userProfileKey, user, redisService.getUserProfileTTL());
+          }
+        }
+
+        if (user) {
+          // Use user's preferred language from database
+          userLanguage = user.preferredLanguage || 'en';
+          
+          userProfile = {
+            farmerType: user.farmInfo.farmerType,
+            location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
+            economicScale: user.farmInfo.economicScale,
+            onboardingStatus: user.onboardingStatus,
+          };
+          userDetails = {
+            userId: user._id,
+            name: `${user.personalInfo.firstName}${user.personalInfo.middleName ? ' ' + user.personalInfo.middleName : ''} ${user.personalInfo.lastName}`,
+            district: user.locationInfo.district,
+            province: user.locationInfo.province,
+            farmerType: user.farmInfo.farmerType,
+            economicScale: user.farmInfo.economicScale,
+            onboardingStatus: user.onboardingStatus,
+          };
+        }
+      } catch (error) {
+        logger.warn(`Failed to fetch user profile for ${targetUserId}:`, error);
+      }
+    }
+
+    // Validate userLanguage
+    if (!['en', 'ne'].includes(userLanguage)) {
+      userLanguage = 'en'; // Fallback to English if invalid
+    }
 
     // Translate question to English if it's in Nepali
     if (userLanguage === 'ne') {
@@ -83,45 +130,6 @@ router.post('/ask', optionalAuth, async (req, res) => {
       } catch (translationError) {
         logger.warn('Failed to translate question, using original:', translationError);
         translatedQuestion = question;
-      }
-    }
-
-    // Get user profile from authenticated user or provided userId
-    const targetUserId = req.user?.userId || userId;
-    if (targetUserId) {
-      try {
-        // Check cache for user profile first
-        const userProfileKey = redisService.generateUserProfileKey(targetUserId);
-        let user = await redisService.get<IUser>(userProfileKey);
-
-        if (!user) {
-          // Fetch from database if not in cache
-          user = await User.findById(targetUserId);
-          if (user) {
-            // Cache user profile
-            await redisService.set(userProfileKey, user, redisService.getUserProfileTTL());
-          }
-        }
-
-        if (user) {
-          userProfile = {
-            farmerType: user.farmInfo.farmerType,
-            location: `${user.locationInfo.district}, ${user.locationInfo.province}`,
-            economicScale: user.farmInfo.economicScale,
-            onboardingStatus: user.onboardingStatus,
-          };
-          userDetails = {
-            userId: user._id,
-            name: `${user.personalInfo.firstName}${user.personalInfo.middleName ? ' ' + user.personalInfo.middleName : ''} ${user.personalInfo.lastName}`,
-            district: user.locationInfo.district,
-            province: user.locationInfo.province,
-            farmerType: user.farmInfo.farmerType,
-            economicScale: user.farmInfo.economicScale,
-            onboardingStatus: user.onboardingStatus,
-          };
-        }
-      } catch (error) {
-        logger.warn(`Failed to fetch user profile for ${targetUserId}:`, error);
       }
     }
 
