@@ -69,7 +69,7 @@ async function processTTSRequest(text: string, voice: string): Promise<Buffer> {
       error += data.toString();
     });
     py.on('close', (code) => {
-      if (code !== 0 || error) {
+      if (code !== 0) {
         return reject(new Error('TTS Python error: ' + error));
       }
       try {

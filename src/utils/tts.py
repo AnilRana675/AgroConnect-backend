@@ -106,12 +106,12 @@ def validate_input(text: str) -> Dict[str, Any]:
         if not text.strip():
             return {"success": False, "error": "Text cannot be empty or only whitespace"}
         
-        if len(text) > 2000:
-            return {"success": False, "error": "Text must be less than 2000 characters for free TTS"}
+        if len(text) > 5000:
+            return {"success": False, "error": "Text must be less than 5000 characters for TTS"}
         
         # Check for potentially problematic characters
-        if len(text.encode('utf-8')) > 3000:  # UTF-8 byte length check
-            return {"success": False, "error": "Text is too long when encoded (max 3000 bytes)"}
+        if len(text.encode('utf-8')) > 8000:  # UTF-8 byte length check
+            return {"success": False, "error": "Text is too long when encoded (max 8000 bytes)"}
         
         return {"success": True}
         
