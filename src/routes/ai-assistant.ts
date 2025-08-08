@@ -1,5 +1,7 @@
 import express from 'express';
+import aiServiceManager from '../services/aiServiceManager';
 import githubModelsAI from '../services/githubModelsAI';
+import deepSeekAI from '../services/deepSeekAI';
 import translationService from '../services/translationService';
 import { User, IUser } from '../models/User';
 import { authenticate, optionalAuth } from '../middleware/auth';
@@ -10,38 +12,13 @@ import { ensureUserLanguage } from '../services/userService';
 
 const router = express.Router();
 
-// Check if AI service is configured
-router.get('/status', (req, res) => {
-  const isConfigured = githubModelsAI.isConfigured();
-  res.json({
-    success: true,
-    configured: isConfigured,
-    message: isConfigured
-      ? 'AI service is ready'
-      : 'AI service not configured - missing GitHub token',
-    service: {
-      name: 'GitHub Models AI Service',
-      provider: 'GitHub Models',
-      model: 'Llama-3.2-11B-Vision-Instruct',
-      features: [
-        'Farming advice',
-        'Weekly tips generation',
-        'Crop disease diagnosis',
-        'Personalized recommendations',
-      ],
-    },
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
-
 // Get personalized farming advice
 router.post('/ask', optionalAuth, async (req, res) => {
   const startTime = Date.now();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const { question, userId } = req.body;
+    const { question, userId, userLanguage: requestLanguage } = req.body;
 
     if (!question) {
       return res.status(400).json({
@@ -55,7 +32,7 @@ router.post('/ask', optionalAuth, async (req, res) => {
     let userProfile = null;
     let userDetails = null;
     let translatedQuestion = question;
-    let userLanguage = 'en'; // Default to English
+    let userLanguage = requestLanguage || 'en'; // Use request language or default to English
 
     // Get user profile from authenticated user or provided userId
     const targetUserId = req.user?.userId || userId;
@@ -83,8 +60,10 @@ router.post('/ask', optionalAuth, async (req, res) => {
         }
 
         if (user) {
-          // Use user's preferred language from database
-          userLanguage = user.preferredLanguage || 'en';
+          // Use request language if provided, otherwise fall back to user's preferred language
+          if (!requestLanguage) {
+            userLanguage = user.preferredLanguage || 'en';
+          }
 
           userProfile = {
             farmerType: user.farmInfo.farmerType,
@@ -140,43 +119,70 @@ router.post('/ask', optionalAuth, async (req, res) => {
     );
     let answer = await redisService.get<string>(aiResponseKey);
     let cached = false;
+    let translatedAnswer = '';
+    let translationMetadata = null;
 
     if (!answer) {
-      // Generate new AI response if not in cache (always in English)
-      answer = await githubModelsAI.getFarmingAdvice({
-        question: translatedQuestion,
-        userProfile: userProfile || undefined,
-      });
+      // Generate new AI response using appropriate service based on user language
+      if (userLanguage === 'ne') {
+        // For Nepali users, use original Nepali question with DeepSeek
+        answer = await aiServiceManager.getFarmingAdvice(question, userProfile || undefined, 'ne');
+        translatedAnswer = answer; // Already in Nepali
+      } else {
+        // For English users, use GPT-4.1 via GitHub Models
+        answer = await aiServiceManager.getFarmingAdvice(
+          translatedQuestion,
+          userProfile || undefined,
+          'en',
+        );
+        translatedAnswer = answer; // Already in English
+      }
 
       // Cache the AI response
       await redisService.set(aiResponseKey, answer, redisService.getAIResponseTTL());
     } else {
       cached = true;
       logger.debug(`AI response cache hit for question: ${translatedQuestion.substring(0, 50)}...`);
-    }
 
-    // Translate AI response if user prefers Nepali
-    let translatedAnswer = answer;
-    let translationMetadata = null;
-
-    if (userLanguage === 'ne') {
-      try {
-        const translationResult = await translationService.translateAIResponse(answer, 'ne');
-        translatedAnswer = translationResult.translated;
-        translationMetadata = {
-          originalLanguage: 'en',
-          translatedLanguage: 'ne',
-          translationApplied: translationResult.language === 'ne',
-          originalResponse: answer,
-        };
-        logger.info(`AI response translated to Nepali for user`);
-      } catch (translationError) {
-        logger.warn('Failed to translate AI response, using English:', translationError);
+      // If cached answer and user language doesn't match, we need to handle translation
+      if (userLanguage === 'ne') {
+        try {
+          const translationResult = await translationService.translateAIResponse(answer, 'ne');
+          translatedAnswer = translationResult.translated;
+          translationMetadata = {
+            originalLanguage: 'en',
+            translatedLanguage: 'ne',
+            translationApplied: translationResult.language === 'ne',
+            originalResponse: answer,
+          };
+          logger.info(`Cached AI response translated to Nepali for user`);
+        } catch (translationError) {
+          logger.warn('Failed to translate cached AI response, using English:', translationError);
+          translatedAnswer = answer;
+        }
+      } else {
         translatedAnswer = answer;
       }
     }
 
     const responseTime = Date.now() - startTime;
+
+    // Determine which service was used for metadata
+    let serviceUsed = 'githubModels';
+    let modelUsed = 'gpt-4o';
+
+    if (userLanguage === 'ne') {
+      if (deepSeekAI.isConfigured()) {
+        serviceUsed = 'deepSeek';
+        modelUsed = 'DeepSeek-V3-0324';
+      } else {
+        serviceUsed = 'githubModels';
+        modelUsed = 'gpt-4o'; // Fallback to GPT-4.1
+      }
+    } else {
+      serviceUsed = 'githubModels';
+      modelUsed = 'gpt-4o';
+    }
 
     res.json({
       success: true,
@@ -194,8 +200,9 @@ router.post('/ask', optionalAuth, async (req, res) => {
       metadata: {
         requestId,
         responseTime: `${responseTime}ms`,
-        service: 'GitHub Models AI',
-        model: 'Llama-3.2-11B-Vision-Instruct',
+        service: serviceUsed,
+        model: modelUsed,
+        language: userLanguage,
         personalizationApplied: !!userProfile,
         contextType: userProfile ? 'user_profile' : 'anonymous',
         timestamp: new Date().toISOString(),
@@ -266,7 +273,8 @@ router.get('/weekly-tips/:userId', optionalAuth, async (req, res) => {
       economicScale: user.farmInfo.economicScale,
     };
 
-    const tipsData = await githubModelsAI.getWeeklyTips(userProfile, userLanguage);
+    // Use new AI Service Manager for multilingual tips
+    const tipsData = await aiServiceManager.getWeeklyTips(userProfile);
     const responseTime = Date.now() - startTime;
 
     // Get current date info for seasonal context
@@ -508,7 +516,8 @@ router.get('/weekly-tips', authenticate, async (req, res) => {
       economicScale: user.farmInfo.economicScale,
     };
 
-    const tipsData = await githubModelsAI.getWeeklyTips(userProfile, userLanguage);
+    // Use new AI Service Manager for multilingual tips
+    const tipsData = await aiServiceManager.getWeeklyTips(userProfile);
 
     res.json({
       tips: tipsData[userLanguage as 'en' | 'ne'], // Display in user's preferred language

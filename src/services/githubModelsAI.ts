@@ -27,6 +27,7 @@ class GitHubModelsAIService {
   private lastRequestTime: number = 0;
   private requestCount: number = 0;
   private requestResetTime: number = 0;
+  private gpt4Model: string = 'gpt-4o'; // GPT-4.1 model for English content
 
   constructor() {
     this.apiKey = process.env.GITHUB_TOKEN || null;
@@ -136,7 +137,7 @@ class GitHubModelsAIService {
   }
 
   /**
-   * Get personalized farming advice based on user profile
+   * Get personalized farming advice in English using GPT-4.1
    */
   async getFarmingAdvice(request: FarmingAdviceRequest): Promise<string> {
     if (!this.apiKey) {
@@ -162,16 +163,16 @@ class GitHubModelsAIService {
               content: `You are an expert agricultural advisor specializing in Nepali farming practices. 
                        Provide practical, actionable advice suitable for farmers in Nepal. 
                        Consider local climate, soil conditions, and traditional farming methods. 
-                       Keep responses concise but informative.`,
+                       Keep responses concise but informative. Always respond in English.`,
             },
             {
               role: 'user',
               content: contextPrompt,
             },
           ],
-          model: 'Llama-3.2-11B-Vision-Instruct',
+          model: this.gpt4Model, // Use GPT-4.1 for English farming advice
           temperature: 0.7,
-          max_tokens: 600,
+          max_tokens: 2000, // Increased from 600 for complete responses
           top_p: 1,
         }),
       });
@@ -183,39 +184,30 @@ class GitHubModelsAIService {
       const data = (await response.json()) as ChatResponse;
       const answer = data.choices[0]?.message?.content?.trim() || 'No answer available.';
 
-      logger.info(`AI farming advice provided for question: ${question.substring(0, 50)}...`);
+      logger.info(`GPT-4.1 farming advice provided for question: ${question.substring(0, 50)}...`);
       return answer;
     } catch (error) {
-      logger.error('Error getting farming advice:', error);
+      logger.error('Error getting farming advice from GPT-4.1:', error);
       throw new Error('Failed to get farming advice. Please try again.');
     }
   }
 
   /**
-   * Get weekly farming tips based on user profile in both English and Nepali
+   * Get weekly farming tips in English using GPT-4.1 only
    */
-  async getWeeklyTips(
-    userProfile: {
-      farmerType: string;
-      location: string;
-      economicScale: string;
-    },
-    preferredLanguage: string = 'en',
-  ): Promise<{ en: string; ne: string; displayLanguage: string }> {
+  async getWeeklyTipsInEnglish(userProfile: {
+    farmerType: string;
+    location: string;
+    economicScale: string;
+  }): Promise<string> {
     if (!this.apiKey) {
-      const fallbackMessage = 'AI service is not configured. Please check your GitHub token.';
-      return {
-        en: fallbackMessage,
-        ne: 'AI सेवा कन्फिगर गरिएको छैन। कृपया आफ्नो GitHub टोकन जाँच गर्नुहोस्।',
-        displayLanguage: preferredLanguage,
-      };
+      return 'AI service is not configured. Please check your GitHub token.';
     }
 
     try {
       const basePrompt = `Generate a SHORT summary of weekly farming tips (max 3-4 bullet points) for a ${userProfile.farmerType} farmer in ${userProfile.location}, Nepal with ${userProfile.economicScale} operations. Be concise and practical. Focus on the most important, actionable tips for this week. Avoid long explanations.`;
 
-      // Generate English version
-      const englishResponse = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
+      const response = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -233,72 +225,53 @@ class GitHubModelsAIService {
               content: `${basePrompt} Respond in English language.`,
             },
           ],
-          model: 'Llama-3.2-11B-Vision-Instruct',
+          model: this.gpt4Model, // Use GPT-4.1 for English tips
           temperature: 0.6,
           max_tokens: 400,
           top_p: 1,
         }),
       });
 
-      if (!englishResponse.ok) {
-        throw new Error(
-          `English API request failed: ${englishResponse.status} ${englishResponse.statusText}`,
-        );
+      if (!response.ok) {
+        throw new Error(`GPT-4.1 API request failed: ${response.status} ${response.statusText}`);
       }
 
-      const englishData = (await englishResponse.json()) as ChatResponse;
-      const englishTips = englishData.choices[0]?.message?.content?.trim() || 'No tips available.';
-
-      // Small delay to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Generate Nepali version
-      const nepaliResponse = await this.makeAPIRequest(`${this.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: `You are an agricultural expert for Nepal. Provide weekly farming tips 
-                       that are practical, season-appropriate, and suitable for local conditions. Keep your answer very short and concise, using only 2-4 bullet points. Respond in Nepali language (देवनागरी script).`,
-            },
-            {
-              role: 'user',
-              content: `${basePrompt} Respond in Nepali language (देवनागरी script).`,
-            },
-          ],
-          model: 'Llama-3.2-11B-Vision-Instruct',
-          temperature: 0.6,
-          max_tokens: 400,
-          top_p: 1,
-        }),
-      });
-
-      if (!nepaliResponse.ok) {
-        throw new Error(
-          `Nepali API request failed: ${nepaliResponse.status} ${nepaliResponse.statusText}`,
-        );
-      }
-
-      const nepaliData = (await nepaliResponse.json()) as ChatResponse;
-      const nepaliTips =
-        nepaliData.choices[0]?.message?.content?.trim() || 'कुनै सुझावहरू उपलब्ध छैनन्।';
+      const data = (await response.json()) as ChatResponse;
+      const tips = data.choices[0]?.message?.content?.trim() || 'No tips available.';
 
       logger.info(
-        `Weekly farming tips generated for ${userProfile.farmerType} in ${userProfile.location} (both languages)`,
+        `GPT-4.1 weekly farming tips generated for ${userProfile.farmerType} in ${userProfile.location}`,
       );
+
+      return tips;
+    } catch (error) {
+      logger.error('Error generating weekly tips with GPT-4.1:', error);
+      throw new Error('Failed to generate weekly tips. Please try again.');
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility - now only returns English
+   */
+  async getWeeklyTips(
+    userProfile: {
+      farmerType: string;
+      location: string;
+      economicScale: string;
+    },
+    preferredLanguage: string = 'en',
+  ): Promise<{ en: string; ne: string; displayLanguage: string }> {
+    try {
+      // Only generate English version using GPT-4.1
+      const englishTips = await this.getWeeklyTipsInEnglish(userProfile);
 
       return {
         en: englishTips,
-        ne: nepaliTips,
+        ne: 'कृपया नेपाली सुझावहरूका लागि DeepSeek सेवा प्रयोग गर्नुहोस्।', // Placeholder
         displayLanguage: preferredLanguage,
       };
     } catch (error) {
-      logger.error('Error generating weekly tips:', error);
+      logger.error('Error in legacy getWeeklyTips method:', error);
       const fallbackMessage = 'Failed to generate weekly tips. Please try again.';
       return {
         en: fallbackMessage,
@@ -309,7 +282,7 @@ class GitHubModelsAIService {
   }
 
   /**
-   * Identify crop diseases from description
+   * Identify crop diseases from description using GPT-4.1
    */
   async identifyCropDisease(description: string, cropType?: string): Promise<string> {
     if (!this.apiKey) {
@@ -332,14 +305,14 @@ class GitHubModelsAIService {
             {
               role: 'system',
               content: `You are a plant pathologist specializing in crop diseases common in Nepal. 
-                       Provide disease identification and practical treatment options using locally available resources.`,
+                       Provide disease identification and practical treatment options using locally available resources. Always respond in English.`,
             },
             {
               role: 'user',
               content: prompt,
             },
           ],
-          model: 'Llama-3.2-11B-Vision-Instruct',
+          model: this.gpt4Model, // Use GPT-4.1 for disease identification
           temperature: 0.5,
           max_tokens: 350,
           top_p: 1,
