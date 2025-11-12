@@ -3,9 +3,50 @@ import dotenv from 'dotenv';
 // Load environment variables FIRST before any other imports
 dotenv.config();
 
+// Debug: Check environment variables immediately after loading
+console.log('DEBUG: Environment variables loaded:');
+console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('MONGODB_URI:', process.env.MONGODB_URI);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+
+// Check for problematic values before any Express imports
+const problematicEnvVars: Array<{key: string; value: string}> = [];
+Object.entries(process.env).forEach(([key, value]) => {
+  if (value && (value.includes('pathToRegexpError') || value.includes('git.new'))) {
+    problematicEnvVars.push({ key, value });
+  }
+});
+
+if (problematicEnvVars.length > 0) {
+  console.error('CRITICAL: Found problematic environment variables:');
+  problematicEnvVars.forEach(({ key, value }) => {
+    console.error(`${key}: ${value}`);
+  });
+  console.error('These will cause Express route parsing errors!');
+  // Remove problematic env vars
+  problematicEnvVars.forEach(({ key }) => {
+    delete process.env[key];
+    console.log(`Removed problematic env var: ${key}`);
+  });
+}
+
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+
+// Extend Request interface to include user property
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: string;
+        email: string;
+      };
+      requestId?: string;
+    }
+  }
+}
+
 import userRoutes from './routes/users';
 import registrationRoutes from './routes/registration';
 import aiAssistantRoutes from './routes/ai-assistant';
@@ -17,6 +58,17 @@ import monitoringRoutes from './routes/monitoring';
 import emailVerificationRoutes from './routes/emailVerification';
 import passwordResetRoutes from './routes/passwordReset';
 import ttsRouter from './routes/tts';
+// Temporarily comment out other routes to isolate the issue
+// import registrationRoutes from './routes/registration';
+// import aiAssistantRoutes from './routes/ai-assistant';
+// import authRoutes from './routes/auth';
+// import cacheRoutes from './routes/cache';
+// import plantRoutes from './routes/plant';
+// import translationRoutes from './routes/translation';
+// import monitoringRoutes from './routes/monitoring';
+// import emailVerificationRoutes from './routes/emailVerification';
+// import passwordResetRoutes from './routes/passwordReset';
+// import ttsRouter from './routes/tts';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { ipKeyGenerator } from 'express-rate-limit';
@@ -89,20 +141,37 @@ const MONGODB_URI = process.env.MONGODB_URI;
 // Environment-based CORS configuration
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    const frontendUrl = process.env.FRONTEND_URL;
+    
+    // Log the environment variable value for debugging
+    if (frontendUrl) {
+      winstonLogger.info(`FRONTEND_URL environment variable: ${frontendUrl}`);
+      
+      // Check if the frontend URL looks suspicious (contains error messages)
+      if (frontendUrl.includes('pathToRegexpError') || frontendUrl.includes('git.new')) {
+        winstonLogger.error(`Suspicious FRONTEND_URL detected: ${frontendUrl}`);
+        // Don't include this in allowed origins to prevent Express route parsing errors
+      }
+    }
+    
     const allowedOrigins = process.env.NODE_ENV === 'production'
       ? [
           'https://agroconnect-frontend.onrender.com',
           'https://agroconnect-frontend-iup3.onrender.com',
           'https://agro-connect-app.vercel.app',
-          process.env.FRONTEND_URL || '',
+          // Only include FRONTEND_URL if it doesn't contain error messages
+          (frontendUrl && !frontendUrl.includes('pathToRegexpError') && !frontendUrl.includes('git.new')) ? frontendUrl : '',
         ].filter((url) => url !== '') // Remove empty values
       : [
           'http://localhost:3000',
           'http://localhost:3001',
           'http://127.0.0.1:3000',
           'http://localhost:5173', // For Vite dev server
-          process.env.FRONTEND_URL || '',
+          (frontendUrl && !frontendUrl.includes('pathToRegexpError') && !frontendUrl.includes('git.new')) ? frontendUrl : '',
         ].filter((url) => url !== '');
+
+    // Log allowed origins for debugging
+    winstonLogger.info(`CORS allowed origins: ${JSON.stringify(allowedOrigins)}`);
 
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
@@ -247,6 +316,27 @@ app.use(httpLogger);
 // Optimized health check endpoint for Render
 app.get('/health', optimizedHealthCheck);
 
+// Debug endpoint to check environment variables (remove in production)
+app.get('/debug/env', (req, res) => {
+  const safeEnvVars = {
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    FRONTEND_URL: process.env.FRONTEND_URL || 'undefined',
+    // Don't expose sensitive vars like API keys
+  };
+  
+  winstonLogger.info('Environment debug endpoint accessed', {
+    requestId: (req as express.Request & { requestId: string }).requestId,
+    env: safeEnvVars,
+  });
+  
+  res.json({
+    message: 'Environment debug info',
+    environment: safeEnvVars,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/', (req, res) => {
   winstonLogger.info({
     message: 'Root endpoint accessed',
@@ -339,6 +429,22 @@ app.use(errorHandler); // Handle all other errors
 
 // Start server after connecting to database and Redis
 const startServer = async () => {
+  // Add environment variable validation to prevent route parsing errors
+  const envVarsToCheck = ['FRONTEND_URL', 'MONGODB_URI', 'REDIS_URL'];
+  for (const envVar of envVarsToCheck) {
+    const value = process.env[envVar];
+    if (value && (value.includes('pathToRegexpError') || value.includes('git.new'))) {
+      winstonLogger.error(`Environment variable ${envVar} contains error URL: ${value}`);
+      winstonLogger.error('This will cause Express route parsing errors. Please check your Render environment configuration.');
+      
+      // Don't exit the process, but log the issue clearly
+      if (envVar === 'FRONTEND_URL') {
+        winstonLogger.warn('Continuing without FRONTEND_URL to avoid Express errors...');
+        delete process.env.FRONTEND_URL; // Remove the problematic env var
+      }
+    }
+  }
+
   await connectDB();
   await connectRedis();
 
