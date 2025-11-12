@@ -69,19 +69,12 @@ router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
     user.passwordReset.resetTokenExpires = tokenExpires;
     await user.save();
 
-    // Send password reset email
-    const emailSent = await emailService.sendPasswordResetEmail(
+    // Send password reset email asynchronously
+    emailService.sendPasswordResetEmailAsync(
       email,
       user.personalInfo.firstName,
       resetToken,
     );
-
-    if (!emailSent) {
-      return res.status(500).json({
-        error: 'Failed to send email',
-        message: 'Email service is not configured. Please contact support.',
-      });
-    }
 
     logger.info(`Password reset email sent to: ${email}`);
 

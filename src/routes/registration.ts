@@ -458,18 +458,12 @@ router.post('/complete', async (req, res) => {
 
     await newUser.save();
 
-    // Send verification email
-    try {
-      await emailService.sendVerificationEmail(
-        userData.loginCredentials.email,
-        userData.personalInfo.firstName,
-        verificationToken,
-      );
-      logger.info(`Verification email sent to: ${userData.loginCredentials.email}`);
-    } catch (emailError) {
-      logger.error('Failed to send verification email:', emailError);
-      // Don't fail registration if email fails, just log it
-    }
+    // Send verification email asynchronously (don't wait for completion)
+    emailService.sendVerificationEmailAsync(
+      userData.loginCredentials.email,
+      userData.personalInfo.firstName,
+      verificationToken,
+    );
 
     // Delete temporary registration if it exists
     await TempRegistration.deleteOne({ sessionId });
