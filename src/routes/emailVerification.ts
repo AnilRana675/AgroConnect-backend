@@ -53,21 +53,14 @@ router.post('/send-verification', async (req, res) => {
     user.emailVerification.verificationTokenExpires = tokenExpires;
     await user.save();
 
-    // Send verification email
-    const emailSent = await emailService.sendVerificationEmail(
+    // Send verification email asynchronously
+    emailService.sendVerificationEmailAsync(
       email,
       user.personalInfo.firstName,
       verificationToken,
     );
 
-    if (!emailSent) {
-      return res.status(500).json({
-        error: 'Failed to send email',
-        message: 'Email service is not configured. Please contact support.',
-      });
-    }
-
-    logger.info(`Verification email sent to: ${email}`);
+    logger.info(`Verification email queued for: ${email}`);
 
     res.json({
       message: 'Verification email sent successfully',
@@ -207,21 +200,14 @@ router.post('/resend-verification', async (req, res) => {
     user.emailVerification.verificationTokenExpires = tokenExpires;
     await user.save();
 
-    // Send verification email
-    const emailSent = await emailService.sendVerificationEmail(
+    // Send verification email asynchronously
+    emailService.sendVerificationEmailAsync(
       email,
       user.personalInfo.firstName,
       verificationToken,
     );
 
-    if (!emailSent) {
-      return res.status(500).json({
-        error: 'Failed to send email',
-        message: 'Email service is not configured. Please contact support.',
-      });
-    }
-
-    logger.info(`Verification email resent to: ${email}`);
+    logger.info(`Verification email queued for resend to: ${email}`);
 
     res.json({
       message: 'Verification email sent successfully',

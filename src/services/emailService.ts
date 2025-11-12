@@ -46,7 +46,7 @@ class EmailService {
         return true;
       }
 
-      // Gmail configuration with App Password
+      // Gmail configuration with App Password and timeout settings
       logger.info('Configuring Gmail SMTP service...');
       const emailConfig = {
         service: 'gmail',
@@ -56,6 +56,9 @@ class EmailService {
         },
         secure: true, // Use SSL
         port: 465,
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000, // 10 seconds
+        socketTimeout: 15000, // 15 seconds
         tls: {
           rejectUnauthorized: false,
         },
@@ -154,6 +157,46 @@ class EmailService {
     </body>
     </html>
     `;
+  }
+
+  // Make email sending asynchronous - don't wait for completion
+  sendVerificationEmailAsync(
+    email: string,
+    firstName: string,
+    verificationToken: string,
+  ): void {
+    // Fire and forget - don't wait for completion
+    this.sendVerificationEmail(email, firstName, verificationToken)
+      .then((success) => {
+        if (success) {
+          logger.info(`Verification email sent to: ${email}`);
+        } else {
+          logger.warn(`Failed to send verification email to: ${email}`);
+        }
+      })
+      .catch((error) => {
+        logger.error(`Error sending verification email to ${email}:`, error.message);
+      });
+  }
+
+  // Make password reset email sending asynchronous
+  sendPasswordResetEmailAsync(
+    email: string,
+    firstName: string,
+    resetToken: string,
+  ): void {
+    // Fire and forget - don't wait for completion
+    this.sendPasswordResetEmail(email, firstName, resetToken)
+      .then((success) => {
+        if (success) {
+          logger.info(`Password reset email sent to: ${email}`);
+        } else {
+          logger.warn(`Failed to send password reset email to: ${email}`);
+        }
+      })
+      .catch((error) => {
+        logger.error(`Error sending password reset email to ${email}:`, error.message);
+      });
   }
 
   async sendVerificationEmail(
