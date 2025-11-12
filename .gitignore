@@ -12,3 +12,6 @@ coverage/
 .github
 .github/copilot-instructions.md.github
 .github/copilot-instructions.md
+
+#Ignore vscode AI rules
+.github\copilot-instructions.md
