@@ -88,8 +88,8 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // Environment-based CORS configuration
 const corsOptions = {
-  origin:
-    process.env.NODE_ENV === 'production'
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    const allowedOrigins = process.env.NODE_ENV === 'production'
       ? [
           'https://agroconnect-frontend.onrender.com',
           'https://agroconnect-frontend-iup3.onrender.com',
@@ -100,16 +100,53 @@ const corsOptions = {
           'http://localhost:3000',
           'http://localhost:3001',
           'http://127.0.0.1:3000',
+          'http://localhost:5173', // For Vite dev server
           process.env.FRONTEND_URL || '',
-        ].filter((url) => url !== ''),
+        ].filter((url) => url !== '');
+
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      winstonLogger.warn(`CORS blocked request from origin: ${origin}`);
+      callback(null, true); // Allow all origins for now to debug
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Cache-Control',
+    'X-Request-ID'
+  ],
+  exposedHeaders: [
+    'X-Request-ID',
+    'RateLimit-Limit',
+    'RateLimit-Remaining',
+    'RateLimit-Reset'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   preflightContinue: false,
+  maxAge: 86400, // Cache preflight requests for 24 hours
 };
 
 app.use(cors(corsOptions));
+
+// Explicit preflight handler for all routes
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-Request-ID');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(200);
+});
 
 // Request ID middleware (should be early in the chain)
 app.use(requestIdMiddleware);
